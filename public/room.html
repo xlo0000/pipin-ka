@@ -308,3 +308,226 @@
       if (data.videoId && data.videoId !== player.getVideoData().video_id) {
         player.loadVideoById(data.videoId);
       }
+      
+      setTimeout(() => {
+        const currentTime = player.getCurrentTime();
+        const diff = Math.abs(currentTime - data.time);
+        if (diff > 1.5) player.seekTo(data.time, true);
+        if (data.playing && player.getPlayerState() !== YT.PlayerState.PLAYING) player.playVideo();
+        else if (!data.playing && player.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo();
+      }, 300);
+
+      setTimeout(() => {
+        isRemoteAction = false;
+        actionLock = false;
+      }, 1000);
+    });
+
+    socket.on('chat-message', (msg) => {
+      addMsg(msg.name, msg.text, msg.avatar);
+    });
+
+    function updateViewersList() {
+      const list = document.getElementById('viewersList');
+      list.innerHTML = '';
+      document.getElementById('viewerCount').textContent = currentViewers.length;
+      
+      const myCurrentName = document.getElementById('nameInp').value.trim() || myName;
+      currentViewers.forEach(v => {
+        if (v.id === socket.id) { v.name = myCurrentName; v.avatar = myAvatar; }
+        
+        const div = document.createElement('div');
+        div.className = 'viewer';
+        let bgStyle = v.avatar ? `background-image: url('${v.avatar}')` : `background:${getColor(v.name)}`;
+        let content = v.avatar ? '' : (v.name.charAt(0) || '?');
+        div.innerHTML = `<div class="avatar" style="${bgStyle}">${content}</div><span>${v.name}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    function updateQueueList() {
+      const list = document.getElementById('queueList');
+      list.innerHTML = '';
+      document.getElementById('queueCount').textContent = queue.length;
+
+      if (queue.length === 0) {
+        list.innerHTML = '<div class="queue-empty">Очередь пуста. Добавьте видео!</div>';
+        return;
+      }
+
+      queue.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'queue-item';
+        div.innerHTML = `
+          <div class="queue-info">
+            <span class="queue-title">${index + 1}. ${item.title || 'Видео YouTube'}</span>
+            <span class="queue-author">Добавил: ${item.author}</span>
+          </div>
+          ${item.authorId === socket.id ? '<button class="del-btn" onclick="removeFromQueue(' + index + ')" title="Удалить">✕</button>' : ''}
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+      
+      if (name === 'viewers') {
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('tab-viewers').style.display = 'block';
+      } else {
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.getElementById('tab-queue').style.display = 'block';
+      }
+    }
+
+    function showLinkOverlay() { document.getElementById('linkOverlay').classList.remove('hidden'); }
+    function hideLinkOverlay() { document.getElementById('linkOverlay').classList.add('hidden'); document.getElementById('videoActions').style.display = 'flex'; }
+
+    function loadVideo(playNow) {
+      const url = document.getElementById('urlInp').value;
+      let id = null;
+      try {
+        const u = new URL(url);
+        id = u.searchParams.get('v') || (u.hostname.includes('youtu.be') ? u.pathname.slice(1) : null);
+      } catch(e) {}
+      
+      if (!id) return alert('Ссылка неверная. Нужна ссылка вида youtube.com/watch?v=...');
+      
+      fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`)
+        .then(res => res.json())
+        .then(data => {
+          const title = data.title;
+          const name = document.getElementById('nameInp').value.trim() || myName;
+          
+          if (playNow) {
+            socket.emit('play-now', { room: room, videoId: id, title: title });
+            if (player) player.loadVideoById(id);
+            else loadYT(id);
+            hideLinkOverlay();
+          } else {
+            socket.emit('add-to-queue', { room: room, videoId: id, title: title, author: name, authorId: socket.id });
+            document.getElementById('urlInp').value = '';
+            alert('Видео добавлено в очередь!');
+            switchTab('queue');
+          }
+        })
+        .catch(() => {
+          const name = document.getElementById('nameInp').value.trim() || myName;
+          if (playNow) {
+             socket.emit('play-now', { room: room, videoId: id, title: null });
+             if (player) player.loadVideoById(id); else loadYT(id);
+             hideLinkOverlay();
+          } else {
+             socket.emit('add-to-queue', { room: room, videoId: id, title: null, author: name, authorId: socket.id });
+             switchTab('queue');
+          }
+        });
+    }
+
+    function removeFromQueue(index) { socket.emit('remove-from-queue', { room: room, index: index }); }
+    function playNext() { socket.emit('play-next', { room: room }); }
+
+    function loadYT(videoId) {
+      if (player) { player.loadVideoById(videoId); return; }
+      player = new YT.Player('player', {
+        videoId: videoId,
+        playerVars: { rel: 0, origin: window.location.origin },
+        events: {
+          onReady: () => {
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('fsBtn').style.display = 'block';
+            document.getElementById('player').style.pointerEvents = 'none'; 
+            startTick();
+          },
+          onStateChange: (e) => {
+            if (isRemoteAction || actionLock) return;
+            const time = player.getCurrentTime();
+            if (e.data === YT.PlayerState.PAUSED) {
+              document.getElementById('playBtn').textContent = 'Смотреть';
+              socket.emit('video-action', { room: room, playing: false, time: time });
+            } else if (e.data === YT.PlayerState.PLAYING) {
+              document.getElementById('playBtn').textContent = 'Пауза';
+              socket.emit('video-action', { room: room, playing: true, time: time });
+            } else if (e.data === YT.PlayerState.ENDED) {
+              socket.emit('video-ended', { room: room });
+            }
+          }
+        }
+      });
+    }
+
+    document.getElementById('playBtn').onclick = () => {
+      if (!player) return;
+      const st = player.getPlayerState();
+      const time = player.getCurrentTime();
+      if (st === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
+        socket.emit('video-action', { room: room, playing: false, time: time });
+      } else {
+        player.playVideo();
+        socket.emit('video-action', { room: room, playing: true, time: time });
+      }
+    };
+
+    document.getElementById('progress').onclick = function(e) {
+      if (!player) return;
+      const dur = player.getDuration();
+      if (!dur) return;
+      const r = this.getBoundingClientRect();
+      const ratio = (e.clientX - r.left) / r.width;
+      const newTime = dur * ratio;
+      player.seekTo(newTime, true);
+      socket.emit('video-action', { room: room, playing: player.getPlayerState() === YT.PlayerState.PLAYING, time: newTime });
+    };
+
+    function startTick() {
+      if(tickTimer) clearInterval(tickTimer);
+      tickTimer = setInterval(() => {
+        if (!player || typeof player.getCurrentTime !== 'function') return;
+        const cur = player.getCurrentTime() || 0;
+        const dur = player.getDuration() || 0;
+        if (dur > 0) {
+          document.getElementById('fill').style.width = (cur / dur * 100) + '%';
+          document.getElementById('timeLbl').textContent = fmt(cur) + ' / ' + fmt(dur);
+        }
+      }, 250);
+    }
+
+    function fmt(s) { s = Math.max(0, Math.floor(s)); const m = Math.floor(s/60), ss = s%60; return m + ':' + (ss<10?'0':'') + ss; }
+
+    document.getElementById('fsBtn').onclick = () => {
+      const videoPane = document.getElementById('videoPane');
+      if (!document.fullscreenElement) {
+        if (videoPane.requestFullscreen) videoPane.requestFullscreen();
+        else if (videoPane.webkitRequestFullscreen) videoPane.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    };
+
+    function sendMsg() {
+      const inp = document.getElementById('inp');
+      if (!inp.value.trim()) return;
+      const name = document.getElementById('nameInp').value.trim() || myName;
+      socket.emit('chat-message', { room: room, name: name, text: inp.value, avatar: myAvatar });
+      inp.value = '';
+    }
+
+    function addMsg(name, text, avatar) {
+      const div = document.createElement('div');
+      div.className = 'msg';
+      let bgStyle = avatar ? `background-image: url('${avatar}')` : `background:${getColor(name)}`;
+      let content = avatar ? '' : (name.charAt(0) || '?');
+      div.innerHTML = `<span class="author"><span class="avatar-mini" style="${bgStyle}">${content}</span>${name}</span><span>${text}</span>`;
+      document.getElementById('msgs').appendChild(div);
+      document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
+    }
+
+    document.getElementById('inp').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMsg();
+    });
+  </script>
+</body>
+</html>
