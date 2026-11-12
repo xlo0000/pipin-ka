@@ -52,8 +52,8 @@
   /* Контент */
   .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; width: 100%; flex: 1; display: flex; gap: 30px; }
   
-  .main-content { flex: 1; }
-  .sidebar { width: 320px; display: flex; flex-direction: column; gap: 20px; }
+  .main-content { flex: 1; min-width: 0; }
+  .sidebar { width: 320px; display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; }
 
   .hero { text-align: center; margin-bottom: 40px; display: flex; flex-direction: column; align-items: center; }
   .hero h1 { font-size: 40px; font-weight: 800; margin-bottom: 15px; letter-spacing: -1px; line-height: 1.2; color: var(--text); }
@@ -77,41 +77,40 @@
   
   .empty-state { text-align: center; padding: 30px; color: var(--text-muted); font-size: 14px; background: var(--surface); border: 1px dashed var(--border); border-radius: 12px; }
 
-  /* Друзья (Сайдбар) */
+  /* Друзья */
   .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
   .search-friends { display: flex; gap: 8px; margin-bottom: 15px; }
-  .search-friends input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; }
-  .search-friends button { padding: 10px 15px; border-radius: 8px; border: none; background: var(--accent); color: var(--accent-text); cursor: pointer; font-weight: 600; }
+  .search-friends input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; min-width: 0; }
+  .search-friends button { padding: 10px 15px; border-radius: 8px; border: none; background: var(--accent); color: var(--accent-text); cursor: pointer; font-weight: 600; flex-shrink: 0; }
   
-  .friend-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .friend-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
   .friend-item:last-child { border-bottom: none; }
-  .friend-info { display: flex; align-items: center; gap: 10px; }
-  .friend-info .avatar { width: 32px; height: 32px; font-size: 14px; }
-  .friend-name { font-weight: 500; font-size: 14px; }
+  .friend-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .friend-info .avatar { width: 32px; height: 32px; font-size: 14px; flex-shrink: 0; }
+  .friend-name { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   
-  .btn-small { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-hover); color: var(--text); cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; }
+  .btn-small { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-hover); color: var(--text); cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; flex-shrink: 0; }
   .btn-small:hover { background: var(--border); }
   .btn-small.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 
-  /* Модальное окно чата с другом */
+  /* Чат с другом */
   .chat-modal { position: fixed; bottom: 20px; right: 20px; width: 350px; height: 500px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 1000; }
   .chat-modal.on { display: flex; }
   .chat-modal-header { padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
   .chat-modal-close { cursor: pointer; font-size: 20px; color: var(--text-muted); }
   .chat-modal-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
   .chat-modal-input { padding: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
-  .chat-modal-input input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; }
+  .chat-modal-input input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; min-width: 0; }
 
   /* Сообщения */
   .msg { display: flex; flex-direction: column; max-width: 80%; }
   .msg.mine { align-self: flex-end; align-items: flex-end; }
   .msg.their { align-self: flex-start; align-items: flex-start; }
-  .msg-bubble { padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.4; position: relative; }
+  .msg-bubble { padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.4; position: relative; word-break: break-word; }
   .msg.mine .msg-bubble { background: var(--accent); color: var(--accent-text); border-bottom-right-radius: 2px; }
   .msg.their .msg-bubble { background: var(--surface-hover); color: var(--text); border-bottom-left-radius: 2px; }
-  .msg-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
 
-  /* Модальные окна (Авторизация) */
+  /* Модальное окно входа */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
   .modal-overlay.on { display: flex; }
   .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px; width: 90%; max-width: 420px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); color: var(--text); }
@@ -174,9 +173,8 @@
     <div class="profile-area" id="profileArea"></div>
   </div>
 
-  <!-- Основной контент -->
+  <!-- Контент -->
   <div class="container">
-    <!-- Левая часть: Комнаты -->
     <div class="main-content">
       <div class="hero">
         <h1>Смотрите кино вместе</h1>
@@ -190,19 +188,18 @@
       </div>
     </div>
 
-    <!-- Правая часть: Друзья -->
     <div class="sidebar" id="sidebar" style="display:none;">
       <div class="panel">
-        <div class="section-title">Друзья</div>
+        <div class="section-title" style="font-size:16px;">Друзья</div>
         <div class="search-friends">
-          <input type="text" id="searchInput" placeholder="Найти по имени или email..." onkeydown="if(event.key==='Enter') searchUsers()">
+          <input type="text" id="searchInput" placeholder="Имя или email..." onkeydown="if(event.key==='Enter') searchUsers()">
           <button onclick="searchUsers()">Искать</button>
         </div>
         <div id="searchResults"></div>
       </div>
 
       <div class="panel" id="requestsPanel" style="display:none;">
-        <div class="section-title" style="font-size:16px;">Заявки в друзья</div>
+        <div class="section-title" style="font-size:16px;">Заявки</div>
         <div id="requestsList"></div>
       </div>
 
@@ -214,10 +211,9 @@
   </div>
 
 <script>
-  // Инициализация Socket.io
   const socket = io();
 
-  // 1. ТЕМЫ
+  // ТЕМЫ
   function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('pipinka_theme', theme);
@@ -228,11 +224,8 @@
   const savedTheme = localStorage.getItem('pipinka_theme') || 'light';
   setTheme(savedTheme);
 
-  // 2. АККАУНТ
   let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
   let authMode = 'login';
-
-  // 3. ЛИЧНЫЙ ЧАТ
   let currentFriendId = null;
 
   function updateUI() {
@@ -271,7 +264,6 @@
     }
   }
 
-  // --- ЗАГРУЗКА КОМНАТ ---
   async function loadMyRooms() {
     if (!currentUser) return;
     try {
@@ -326,7 +318,7 @@
     window.location.href = `/room.html?room=${newRoomId}`;
   }
 
-  // --- ДРУЗЬЯ ---
+  // ДРУЗЬЯ
   async function searchUsers() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) return;
@@ -433,18 +425,18 @@
     } catch (e) { alert('Ошибка'); }
   }
 
-  // --- ЛИЧНЫЙ ЧАТ ---
+  // ЛИЧНЫЙ ЧАТ
   async function openFriendChat(friendId, friendName) {
     currentFriendId = friendId;
     document.getElementById('chatWithName').textContent = friendName;
     document.getElementById('friendChatModal').classList.add('on');
     document.getElementById('friendChatMessages').innerHTML = '';
     
-    // Загружаем историю
     try {
       const res = await fetch(`/api/direct-messages?userId=${currentUser.id}&friendId=${friendId}`);
       const messages = await res.json();
       messages.forEach(m => addDirectMessageToUI(m, false));
+      document.getElementById('friendChatMessages').scrollTop = document.getElementById('friendChatMessages').scrollHeight;
     } catch(e) { console.error(e); }
   }
 
@@ -466,15 +458,12 @@
     inp.value = '';
   }
 
-  // Обработка входящих сообщений
   socket.on('new-direct-message', (msg) => {
     if (!currentUser) return;
-    // Если чат открыт с этим человеком
     if ((msg.sender_id === currentUser.id && msg.receiver_id === currentFriendId) ||
         (msg.sender_id === currentFriendId && msg.receiver_id === currentUser.id)) {
       addDirectMessageToUI(msg, true);
     }
-    // TODO: Уведомление, если чат закрыт
   });
 
   function addDirectMessageToUI(msg, scroll = true) {
@@ -488,7 +477,7 @@
     if (scroll) container.scrollTop = container.scrollHeight;
   }
 
-  // --- АВТОРИЗАЦИЯ ---
+  // АВТОРИЗАЦИЯ
   function openModal(mode) {
     authMode = mode;
     document.getElementById('authModal').classList.add('on');
