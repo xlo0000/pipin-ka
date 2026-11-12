@@ -170,8 +170,17 @@
       <button class="theme-btn" data-color="mint" onclick="setTheme('mint')"></button>
       <button class="theme-btn" data-color="pink" onclick="setTheme('pink')"></button>
     </div>
-    <div class="profile-area" id="profileArea">
-      <!-- Сюда JS будет вставлять либо кнопку, либо профиль -->
+    
+    <!-- ВАЖНО: Кнопка входа теперь жестко в HTML, её не сможет сломать JS -->
+    <div class="profile-area">
+      <button class="login-btn" id="loginBtn" onclick="openModal('login')">Войти</button>
+      <div class="user-info" id="userInfoBtn" style="display:none;">
+        <span class="user-name" id="userNameDisplay"></span>
+        <div class="avatar" id="userAvatarDisplay"></div>
+      </div>
+      <div class="profile-menu" id="profileMenu">
+        <button onclick="logout()" class="danger">Выйти</button>
+      </div>
     </div>
   </div>
 
@@ -213,8 +222,10 @@
   </div>
 
 <script>
-  // Инициализация Socket.io для личных сообщений
   const socket = io();
+  let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
+  let authMode = 'login';
+  let currentFriendId = null;
 
   // 1. ТЕМЫ
   function setTheme(theme) {
@@ -224,56 +235,43 @@
       btn.classList.toggle('active', btn.dataset.color === theme);
     });
   }
-  const savedTheme = localStorage.getItem('pipinka_theme') || 'light';
-  setTheme(savedTheme);
+  setTheme(localStorage.getItem('pipinka_theme') || 'light');
 
-  // 2. ДАННЫЕ ПОЛЬЗОВАТЕЛЯ
-  let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
-  let authMode = 'login';
-  let currentFriendId = null;
-
-  // 3. ФУНКЦИЯ ОБНОВЛЕНИЯ ИНТЕРФЕЙСА
+  // 2. ОТРИСОВКА ИНТЕРФЕЙСА (Только показ/скрытие блоков)
   function updateUI() {
-    const area = document.getElementById('profileArea');
-    const myRoomsSection = document.getElementById('myRoomsSection');
+    const loginBtn = document.getElementById('loginBtn');
+    const userInfoBtn = document.getElementById('userInfoBtn');
     const sidebar = document.getElementById('sidebar');
-
-    console.log("Обновление UI. Пользователь:", currentUser);
+    const myRoomsSection = document.getElementById('myRoomsSection');
 
     if (currentUser) {
-      // Если вошел - показываем профиль и панели
-      area.innerHTML = `
-        <div class="user-info" id="userInfoBtn">
-          <span class="user-name">${currentUser.name}</span>
-          <div class="avatar" style="${currentUser.avatar ? `background-image:url('${currentUser.avatar}')` : ''}">
-            ${currentUser.avatar ? '' : currentUser.name.charAt(0).toUpperCase()}
-          </div>
-        </div>
-        <div class="profile-menu" id="profileMenu">
-          <button onclick="logout()" class="danger">Выйти</button>
-        </div>
-      `;
-      myRoomsSection.style.display = 'block';
+      loginBtn.style.display = 'none';
+      userInfoBtn.style.display = 'flex';
+      document.getElementById('userNameDisplay').textContent = currentUser.name;
+      
+      const ava = document.getElementById('userAvatarDisplay');
+      if (currentUser.avatar) {
+        ava.style.backgroundImage = `url('${currentUser.avatar}')`;
+        ava.textContent = '';
+      } else {
+        ava.textContent = currentUser.name.charAt(0).toUpperCase();
+      }
+
       sidebar.style.display = 'flex';
+      myRoomsSection.style.display = 'block';
       
       loadMyRooms();
       loadFriends();
       loadFriendRequests();
-
-      const userBtn = document.getElementById('userInfoBtn');
-      const menu = document.getElementById('profileMenu');
-      userBtn.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('on'); };
-      document.addEventListener('click', () => menu.classList.remove('on'));
-      menu.addEventListener('click', (e) => e.stopPropagation());
     } else {
-      // Если НЕ вошел - показываем кнопку "Войти"
-      area.innerHTML = `<button class="login-btn" onclick="openModal('login')">Войти</button>`;
-      myRoomsSection.style.display = 'none';
+      loginBtn.style.display = 'block';
+      userInfoBtn.style.display = 'none';
       sidebar.style.display = 'none';
+      myRoomsSection.style.display = 'none';
     }
   }
 
-  // 4. ЗАГРУЗКА КОМНАТ
+  // 3. КОМНАТЫ
   async function loadMyRooms() {
     if (!currentUser) return;
     try {
@@ -283,7 +281,7 @@
       grid.innerHTML = '';
 
       if (rooms.length === 0) {
-        grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">У вас пока нет комнат. Создайте первую!</div>';
+        grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">У вас пока нет комнат.</div>';
         return;
       }
 
@@ -328,7 +326,7 @@
     window.location.href = `/room.html?room=${newRoomId}`;
   }
 
-  // 5. ДРУЗЬЯ И ЛИЧНЫЙ ЧАТ
+  // 4. ДРУЗЬЯ
   async function searchUsers() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) return;
@@ -435,6 +433,7 @@
     } catch (e) { alert('Ошибка'); }
   }
 
+  // 5. ЛИЧНЫЙ ЧАТ
   async function openFriendChat(friendId, friendName) {
     currentFriendId = friendId;
     document.getElementById('chatWithName').textContent = friendName;
@@ -537,17 +536,15 @@
     }
   }
 
-  // Запуск при загрузке страницы
+  // Обработчик клика по профилю
+  document.getElementById('userInfoBtn').onclick = (e) => {
+    e.stopPropagation();
+    document.getElementById('profileMenu').classList.toggle('on');
+  };
+  document.addEventListener('click', () => document.getElementById('profileMenu').classList.remove('on'));
+
+  // Запуск
   updateUI();
-  
-  // Обновление данных при возврате на вкладку
-  window.addEventListener('focus', () => { 
-    if (currentUser) {
-      loadMyRooms(); 
-      loadFriends(); 
-      loadFriendRequests(); 
-    }
-  });
 </script>
 </body>
 </html>
