@@ -3,33 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KinoRoom — смотрим вместе</title>
+<title>KinoRoom — Комната</title>
 <style>
   :root { --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a; --text:#e8eaf0; --text2:#9aa3b2; --accent:#e8eaf0; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
   
-  /* Модальное окно (Авторизация) */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
-  .modal-overlay.on { display: flex; }
-  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 25px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-  .modal h2 { text-align: center; margin-bottom: 20px; font-size: 22px; }
-  .modal input { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: white; outline: none; font-size: 14px; }
-  .modal .btn { width: 100%; padding: 12px; font-size: 16px; margin-bottom: 10px; }
-  .modal .switch { text-align: center; font-size: 13px; color: var(--text2); cursor: pointer; }
-  .modal .switch:hover { color: white; }
-
   /* Шапка */
   .topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 18px; border-bottom:1px solid var(--line); background:var(--panel); }
   .logo-area { display:flex; align-items:center; gap:12px; }
   .logo-area strong { font-size:18px; }
   .roomcode { font-family:monospace; font-size:13px; padding:6px 12px; border:1px solid var(--line); border-radius:20px; background:var(--panel2); cursor:pointer; transition: 0.2s; color: var(--text2); display:flex; align-items:center; gap:6px;}
   .roomcode:hover { border-color: var(--text2); color: var(--text); background: var(--line); }
+  .home-btn { padding: 6px 12px; border-radius: 6px; background: transparent; color: var(--text); border: 1px solid var(--line); cursor: pointer; font-size: 13px; transition: 0.2s; }
+  .home-btn:hover { background: var(--panel2); }
   
   /* Профиль */
   .profile-area { position: relative; display: flex; align-items: center; gap: 10px; }
-  .login-btn { padding: 8px 16px; border-radius: 20px; background: var(--accent); color: #111; font-weight: bold; border: none; cursor: pointer; font-size: 14px; }
-  .login-btn:hover { background: white; }
   .my-avatar-btn { width:36px; height:36px; border-radius:50%; background:var(--panel2); border:2px solid var(--line); cursor:pointer; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; background-size:cover; background-position:center; overflow:hidden; transition:0.2s; }
   .my-avatar-btn:hover { border-color: var(--text2); }
   .profile-menu { display:none; position:absolute; top:45px; right:0; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:15px; width:250px; z-index:100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); flex-direction:column; gap:12px; }
@@ -115,31 +105,17 @@
 </head>
 <body>
   
-  <!-- МОДАЛЬНОЕ ОКНО ВХОДА/РЕГИСТРАЦИИ -->
-  <div class="modal-overlay" id="authModal">
-    <div class="modal">
-      <h2 id="modalTitle">Вход в аккаунт</h2>
-      <input type="email" id="authEmail" placeholder="Email" autocomplete="off">
-      <input type="password" id="authPassword" placeholder="Пароль">
-      <input type="text" id="authName" placeholder="Ваше имя" style="display:none;" autocomplete="off">
-      <button class="btn primary" onclick="submitAuth()" id="authBtn">Войти</button>
-      <div class="switch" id="authSwitch" onclick="toggleAuthMode()">Нет аккаунта? Зарегистрироваться</div>
-      <div style="text-align:center; margin-top:10px;"><span class="switch" onclick="closeModal()" style="font-size:12px;">Закрыть</span></div>
-    </div>
-  </div>
-
   <!-- Шапка -->
   <div class="topbar">
     <div class="logo-area">
-      <strong>🎬 KinoRoom</strong>
+      <button class="home-btn" onclick="window.location.href='/'">← На главную</button>
       <span class="roomcode" id="roomDisplay" title="Нажмите, чтобы скопировать ссылку">
         <span>🔗</span> <span id="roomText">...</span>
       </span>
     </div>
     
     <div class="profile-area">
-      <button class="login-btn" id="loginTopBtn" onclick="openModal('login')">Войти</button>
-      <div class="my-avatar-btn" id="myAvatarBtn" title="Мой профиль" style="display:none;">Я</div>
+      <div class="my-avatar-btn" id="myAvatarBtn" title="Мой профиль">Я</div>
       
       <div class="profile-menu" id="profileMenu">
         <div>
@@ -147,7 +123,6 @@
           <input id="nameInp" placeholder="Имя" autocomplete="off">
         </div>
         <button class="btn" id="uploadPhotoBtn">Загрузить фото профиля</button>
-        <button class="btn" onclick="logout()" style="background:transparent; border-color:var(--line); color:#e5534b; margin-top:5px;">Выйти</button>
       </div>
     </div>
   </div>
@@ -217,14 +192,14 @@
     let myAvatar = localStorage.getItem('kinoroom_avatar') || '';
     let queue = []; 
     
-    // Переменные аккаунта
     let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
-    let authMode = 'login';
 
-    // 1. Комната
+    // 1. Получаем комнату (если нет - на главную)
     const urlParams = new URLSearchParams(window.location.search);
-    let room = urlParams.get('room') || 'room-' + Math.random().toString(36).substring(2, 6);
-    if (!urlParams.get('room')) window.history.replaceState(null, '', '?room=' + room);
+    let room = urlParams.get('room');
+    if (!room) {
+      window.location.href = '/';
+    }
     document.getElementById('roomText').textContent = room;
 
     document.getElementById('roomDisplay').onclick = () => {
@@ -233,99 +208,10 @@
       });
     };
 
-    // 2. Аккаунты (Интерфейс)
-    function updateAuthUI() {
-      const loginBtn = document.getElementById('loginTopBtn');
-      const avatarBtn = document.getElementById('myAvatarBtn');
+    // 2. Профиль
+    let myName = currentUser ? currentUser.name : (localStorage.getItem('kinoroom_name') || 'Гость-' + Math.floor(Math.random() * 100));
+    document.getElementById('nameInp').value = myName;
 
-      if (currentUser) {
-        loginBtn.style.display = 'none';
-        avatarBtn.style.display = 'flex';
-        
-        document.getElementById('nameInp').value = currentUser.name;
-        if (currentUser.avatar) {
-          myAvatar = currentUser.avatar;
-          localStorage.setItem('kinoroom_avatar', myAvatar);
-        }
-        updateMyButton();
-      } else {
-        loginBtn.style.display = 'block';
-        avatarBtn.style.display = 'none';
-        updateMyButton();
-      }
-    }
-    updateAuthUI();
-
-    // Модальное окно
-    function openModal(mode) {
-      authMode = mode;
-      document.getElementById('authModal').classList.add('on');
-      document.getElementById('authName').style.display = mode === 'register' ? 'block' : 'none';
-      document.getElementById('modalTitle').textContent = mode === 'register' ? 'Регистрация' : 'Вход в аккаунт';
-      document.getElementById('authBtn').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти';
-      document.getElementById('authSwitch').textContent = mode === 'register' ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
-    }
-    function toggleAuthMode() {
-      openModal(authMode === 'login' ? 'register' : 'login');
-    }
-    function closeModal() {
-      document.getElementById('authModal').classList.remove('on');
-    }
-
-    // Отправка формы
-    async function submitAuth() {
-      const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value;
-      const name = document.getElementById('authName').value.trim();
-      
-      if (!email || !password) return alert('Заполните email и пароль');
-      if (authMode === 'register' && !name) return alert('Введите ваше имя');
-
-      const url = authMode === 'register' ? '/api/register' : '/api/login';
-      const body = authMode === 'register' ? { email, password, name } : { email, password };
-
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          currentUser = data.user;
-          localStorage.setItem('kinoroom_user', JSON.stringify(currentUser));
-          
-          // Привязываем текущую комнату к аккаунту, если она есть
-          if (currentUser.id) {
-            fetch('/api/link-room', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: currentUser.id, roomId: room })
-            });
-          }
-
-          closeModal();
-          updateAuthUI();
-          
-          // Обновляем профиль в сокете, чтобы все увидели новое имя
-          socket.emit('update-profile', { room: room, name: currentUser.name, avatar: myAvatar });
-        } else {
-          alert(data.error || 'Ошибка');
-        }
-      } catch (err) {
-        alert('Ошибка сети. Проверьте подключение.');
-      }
-    }
-
-    function logout() {
-      currentUser = null;
-      localStorage.removeItem('kinoroom_user');
-      updateAuthUI();
-      document.getElementById('profileMenu').classList.remove('on');
-    }
-
-    // 3. Профиль (Меню)
     const profileMenu = document.getElementById('profileMenu');
     document.getElementById('myAvatarBtn').onclick = (e) => {
       e.stopPropagation();
@@ -334,7 +220,6 @@
     document.addEventListener('click', () => profileMenu.classList.remove('on'));
     profileMenu.addEventListener('click', (e) => e.stopPropagation());
 
-    // Обновление имени (если пользователь не залогинен)
     document.getElementById('nameInp').addEventListener('input', (e) => {
       let newName = e.target.value.trim();
       if (!newName) return;
@@ -359,7 +244,7 @@
           
           localStorage.setItem('kinoroom_avatar', myAvatar);
           updateMyButton();
-          socket.emit('update-profile', { room: room, name: document.getElementById('nameInp').value || 'Гость', avatar: myAvatar });
+          socket.emit('update-profile', { room: room, name: document.getElementById('nameInp').value, avatar: myAvatar });
         };
         img.src = event.target.result;
       };
@@ -387,9 +272,7 @@
 
     // --- Socket ---
     socket = io();
-    // При подключении шлем имя и аватар (если залогинен - берем из аккаунта)
-    let initialName = currentUser ? currentUser.name : (localStorage.getItem('kinoroom_name') || 'Гость-' + Math.floor(Math.random() * 100));
-    socket.emit('join', { room: room, name: initialName, avatar: myAvatar });
+    socket.emit('join', { room: room, name: myName, avatar: myAvatar });
 
     socket.on('room-state', (state) => {
       if (state.videoId) {
@@ -425,226 +308,3 @@
       if (data.videoId && data.videoId !== player.getVideoData().video_id) {
         player.loadVideoById(data.videoId);
       }
-      
-      setTimeout(() => {
-        const currentTime = player.getCurrentTime();
-        const diff = Math.abs(currentTime - data.time);
-        if (diff > 1.5) player.seekTo(data.time, true);
-        if (data.playing && player.getPlayerState() !== YT.PlayerState.PLAYING) player.playVideo();
-        else if (!data.playing && player.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo();
-      }, 300);
-
-      setTimeout(() => {
-        isRemoteAction = false;
-        actionLock = false;
-      }, 1000);
-    });
-
-    socket.on('chat-message', (msg) => {
-      addMsg(msg.name, msg.text, msg.avatar);
-    });
-
-    function updateViewersList() {
-      const list = document.getElementById('viewersList');
-      list.innerHTML = '';
-      document.getElementById('viewerCount').textContent = currentViewers.length;
-      
-      const myCurrentName = currentUser ? currentUser.name : (document.getElementById('nameInp').value.trim() || 'Гость');
-      currentViewers.forEach(v => {
-        if (v.id === socket.id) { v.name = myCurrentName; v.avatar = myAvatar; }
-        
-        const div = document.createElement('div');
-        div.className = 'viewer';
-        let bgStyle = v.avatar ? `background-image: url('${v.avatar}')` : `background:${getColor(v.name)}`;
-        let content = v.avatar ? '' : (v.name.charAt(0) || '?');
-        div.innerHTML = `<div class="avatar" style="${bgStyle}">${content}</div><span>${v.name}</span>`;
-        list.appendChild(div);
-      });
-    }
-
-    function updateQueueList() {
-      const list = document.getElementById('queueList');
-      list.innerHTML = '';
-      document.getElementById('queueCount').textContent = queue.length;
-
-      if (queue.length === 0) {
-        list.innerHTML = '<div class="queue-empty">Очередь пуста. Добавьте видео!</div>';
-        return;
-      }
-
-      queue.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'queue-item';
-        div.innerHTML = `
-          <div class="queue-info">
-            <span class="queue-title">${index + 1}. ${item.title || 'Видео YouTube'}</span>
-            <span class="queue-author">Добавил: ${item.author}</span>
-          </div>
-          ${item.authorId === socket.id ? '<button class="del-btn" onclick="removeFromQueue(' + index + ')" title="Удалить">✕</button>' : ''}
-        `;
-        list.appendChild(div);
-      });
-    }
-
-    function switchTab(name) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-      
-      if (name === 'viewers') {
-        document.querySelectorAll('.tab')[0].classList.add('active');
-        document.getElementById('tab-viewers').style.display = 'block';
-      } else {
-        document.querySelectorAll('.tab')[1].classList.add('active');
-        document.getElementById('tab-queue').style.display = 'block';
-      }
-    }
-
-    function showLinkOverlay() { document.getElementById('linkOverlay').classList.remove('hidden'); }
-    function hideLinkOverlay() { document.getElementById('linkOverlay').classList.add('hidden'); document.getElementById('videoActions').style.display = 'flex'; }
-
-    function loadVideo(playNow) {
-      const url = document.getElementById('urlInp').value;
-      let id = null;
-      try {
-        const u = new URL(url);
-        id = u.searchParams.get('v') || (u.hostname.includes('youtu.be') ? u.pathname.slice(1) : null);
-      } catch(e) {}
-      
-      if (!id) return alert('Ссылка неверная. Нужна ссылка вида youtube.com/watch?v=...');
-      
-      fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`)
-        .then(res => res.json())
-        .then(data => {
-          const title = data.title;
-          const name = currentUser ? currentUser.name : (document.getElementById('nameInp').value.trim() || 'Гость');
-          
-          if (playNow) {
-            socket.emit('play-now', { room: room, videoId: id, title: title });
-            if (player) player.loadVideoById(id);
-            else loadYT(id);
-            hideLinkOverlay();
-          } else {
-            socket.emit('add-to-queue', { room: room, videoId: id, title: title, author: name, authorId: socket.id });
-            document.getElementById('urlInp').value = '';
-            alert('Видео добавлено в очередь!');
-            switchTab('queue');
-          }
-        })
-        .catch(() => {
-          const name = currentUser ? currentUser.name : (document.getElementById('nameInp').value.trim() || 'Гость');
-          if (playNow) {
-             socket.emit('play-now', { room: room, videoId: id, title: null });
-             if (player) player.loadVideoById(id); else loadYT(id);
-             hideLinkOverlay();
-          } else {
-             socket.emit('add-to-queue', { room: room, videoId: id, title: null, author: name, authorId: socket.id });
-             switchTab('queue');
-          }
-        });
-    }
-
-    function removeFromQueue(index) { socket.emit('remove-from-queue', { room: room, index: index }); }
-    function playNext() { socket.emit('play-next', { room: room }); }
-
-    function loadYT(videoId) {
-      if (player) { player.loadVideoById(videoId); return; }
-      player = new YT.Player('player', {
-        videoId: videoId,
-        playerVars: { rel: 0, origin: window.location.origin },
-        events: {
-          onReady: () => {
-            document.getElementById('playBtn').disabled = false;
-            document.getElementById('fsBtn').style.display = 'block';
-            document.getElementById('player').style.pointerEvents = 'none'; 
-            startTick();
-          },
-          onStateChange: (e) => {
-            if (isRemoteAction || actionLock) return;
-            const time = player.getCurrentTime();
-            if (e.data === YT.PlayerState.PAUSED) {
-              document.getElementById('playBtn').textContent = 'Смотреть';
-              socket.emit('video-action', { room: room, playing: false, time: time });
-            } else if (e.data === YT.PlayerState.PLAYING) {
-              document.getElementById('playBtn').textContent = 'Пауза';
-              socket.emit('video-action', { room: room, playing: true, time: time });
-            } else if (e.data === YT.PlayerState.ENDED) {
-              socket.emit('video-ended', { room: room });
-            }
-          }
-        }
-      });
-    }
-
-    document.getElementById('playBtn').onclick = () => {
-      if (!player) return;
-      const st = player.getPlayerState();
-      const time = player.getCurrentTime();
-      if (st === YT.PlayerState.PLAYING) {
-        player.pauseVideo();
-        socket.emit('video-action', { room: room, playing: false, time: time });
-      } else {
-        player.playVideo();
-        socket.emit('video-action', { room: room, playing: true, time: time });
-      }
-    };
-
-    document.getElementById('progress').onclick = function(e) {
-      if (!player) return;
-      const dur = player.getDuration();
-      if (!dur) return;
-      const r = this.getBoundingClientRect();
-      const ratio = (e.clientX - r.left) / r.width;
-      const newTime = dur * ratio;
-      player.seekTo(newTime, true);
-      socket.emit('video-action', { room: room, playing: player.getPlayerState() === YT.PlayerState.PLAYING, time: newTime });
-    };
-
-    function startTick() {
-      if(tickTimer) clearInterval(tickTimer);
-      tickTimer = setInterval(() => {
-        if (!player || typeof player.getCurrentTime !== 'function') return;
-        const cur = player.getCurrentTime() || 0;
-        const dur = player.getDuration() || 0;
-        if (dur > 0) {
-          document.getElementById('fill').style.width = (cur / dur * 100) + '%';
-          document.getElementById('timeLbl').textContent = fmt(cur) + ' / ' + fmt(dur);
-        }
-      }, 250);
-    }
-
-    function fmt(s) { s = Math.max(0, Math.floor(s)); const m = Math.floor(s/60), ss = s%60; return m + ':' + (ss<10?'0':'') + ss; }
-
-    document.getElementById('fsBtn').onclick = () => {
-      const videoPane = document.getElementById('videoPane');
-      if (!document.fullscreenElement) {
-        if (videoPane.requestFullscreen) videoPane.requestFullscreen();
-        else if (videoPane.webkitRequestFullscreen) videoPane.webkitRequestFullscreen();
-      } else {
-        if (document.exitFullscreen) document.exitFullscreen();
-      }
-    };
-
-    function sendMsg() {
-      const inp = document.getElementById('inp');
-      if (!inp.value.trim()) return;
-      const name = currentUser ? currentUser.name : (document.getElementById('nameInp').value.trim() || 'Гость');
-      socket.emit('chat-message', { room: room, name: name, text: inp.value, avatar: myAvatar });
-      inp.value = '';
-    }
-
-    function addMsg(name, text, avatar) {
-      const div = document.createElement('div');
-      div.className = 'msg';
-      let bgStyle = avatar ? `background-image: url('${avatar}')` : `background:${getColor(name)}`;
-      let content = avatar ? '' : (name.charAt(0) || '?');
-      div.innerHTML = `<span class="author"><span class="avatar-mini" style="${bgStyle}">${content}</span>${name}</span><span>${text}</span>`;
-      document.getElementById('msgs').appendChild(div);
-      document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
-    }
-
-    document.getElementById('inp').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') sendMsg();
-    });
-  </script>
-</body>
-</html>
