@@ -612,4 +612,39 @@
       }, 250);
     }
 
-    function fmt(s) { s = Math.max(0, Math.floor(s)); const m = Math.floor(s/60), ss = s%60; return m + ':' + (ss<10?'0':'')
+    function fmt(s) { s = Math.max(0, Math.floor(s)); const m = Math.floor(s/60), ss = s%60; return m + ':' + (ss<10?'0':'') + ss; }
+
+    document.getElementById('fsBtn').onclick = () => {
+      const videoPane = document.getElementById('videoPane');
+      if (!document.fullscreenElement) {
+        if (videoPane.requestFullscreen) videoPane.requestFullscreen();
+        else if (videoPane.webkitRequestFullscreen) videoPane.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    };
+
+    function sendMsg() {
+      const inp = document.getElementById('inp');
+      if (!inp.value.trim()) return;
+      const name = currentUser ? currentUser.name : (document.getElementById('nameInp').value.trim() || 'Гость');
+      socket.emit('chat-message', { room: room, name: name, text: inp.value, avatar: myAvatar });
+      inp.value = '';
+    }
+
+    function addMsg(name, text, avatar) {
+      const div = document.createElement('div');
+      div.className = 'msg';
+      let bgStyle = avatar ? `background-image: url('${avatar}')` : `background:${getColor(name)}`;
+      let content = avatar ? '' : (name.charAt(0) || '?');
+      div.innerHTML = `<span class="author"><span class="avatar-mini" style="${bgStyle}">${content}</span>${name}</span><span>${text}</span>`;
+      document.getElementById('msgs').appendChild(div);
+      document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
+    }
+
+    document.getElementById('inp').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMsg();
+    });
+  </script>
+</body>
+</html>
