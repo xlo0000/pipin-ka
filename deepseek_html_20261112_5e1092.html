@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KinoRoom — синхронизация</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a; --text:#e8eaf0; --text2:#9aa3b2; --accent:#e8eaf0; --c1:#4c8dff; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  .topbar { display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid var(--line); background:var(--panel); }
+  .roomcode { font-family:monospace; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel2); }
+  .body { flex:1; display:flex; min-height:0; }
+  .video-pane { flex:2; display:flex; flex-direction:column; }
+  #player { width:100%; flex:1; background:#000; }
+  .chat { flex:1; display:flex; flex-direction:column; border-left:1px solid var(--line); background:var(--panel); min-width:280px; }
+  .msgs { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .msg { font-size:14px; line-height:1.4; }
+  .author { font-weight:bold; font-size:12px; color:var(--text2); display:block; margin-bottom:2px; }
+  .inputrow { padding:12px; border-top:1px solid var(--line); display:flex; gap:8px; }
+  .inp { flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--text); outline:none; }
+  .btn { padding:8px 14px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--text); cursor:pointer; }
+  .btn:hover { background:var(--line); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <strong>🎬 KinoRoom v2</strong>
+    <span class="roomcode">Комната: <input id="roomInp" value="room1" style="width:80px;background:transparent;border:none;color:inherit;outline:none;"></span>
+    <span>Ваше имя: <input id="nameInp" value="Гость" style="width:80px;background:transparent;border:none;color:inherit;outline:none;"></span>
+    <div style="flex:1"></div>
+    <input id="urlInp" placeholder="Ссылка YouTube..." style="width:250px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:white;">
+    <button class="btn" onclick="loadVideo()">Загрузить видео</button>
+    <button class="btn" onclick="location.reload()">Переподключиться</button>
+  </div>
+  
+  <div class="body">
+    <div class="video-pane">
+      <div id="player"></div>
+    </div>
+    <div class="chat">
+      <div class="msgs" id="msgs"></div>
+      <div class="inputrow">
+        <input class="inp" id="inp" placeholder="Сообщение...">
+        <button class="btn" onclick="sendMsg()">→</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    let player, socket, isRemote = false;
+    const room = 'room1'; // Можно сделать динамическим, но для теста фиксируем
+    const myName = Math.random().toString(36).substring(2, 6); // Случайное имя для теста
+    
+    socket = io();
+    socket.emit('join', { room, name: myName });
+
+    socket.on('room-state', (state) => {
+      if (state.videoId) {
+        loadYT(state.videoId);
+      }
+      state.chat.forEach(msg => addMsg(msg.name, msg.text));
+    });
+
+    socket.on('video-action', (data) => {
+      if (!player) return;
+      isRemote = true;
+      if (data.videoId && data.videoId !== player.getVideoData().video_id) {
+        player.loadVideoById(data.videoId);
+      }
+      if (data.playing) {
+        player.seekTo(data.time, true);
+        player.playVideo();
+      } else {
+        player.seekTo(data.time, true);
+        player.pauseVideo();
+      }
+      setTimeout(() => isRemote = false, 500);
+    });
+
+    socket.on('chat-message', (msg) => {
+      addMsg(msg.name, msg.text);
+    });
+
+    function loadVideo() {
+      const url = document.getElementById('urlInp').value;
+      const id = new URL(url).searchParams.get('v');
+      if (!id) return alert('Ссылка неверная');
+      
+      socket.emit('video-action', { room, videoId: id, playing: true, time: 0 });
+      
+      if (player) {
+        player.loadVideoById(id);
+      } else {
+        loadYT(id);
+      }
+    }
+
+    function loadYT(videoId) {
+      if (player) {
+        player.loadVideoById(videoId);
+        return;
+      }
+      player = new YT.Player('player', {
+        videoId: videoId,
+        playerVars: { rel: 0, origin: window.location.origin },
+        events: {
+          onReady: () => {
+            document.getElementById('player').style.pointerEvents = 'none'; // Отключаем прямые клики по плееру
+          },
+          onStateChange: (e) => {
+            if (isRemote) return;
+            const time = player.getCurrentTime();
+            if (e.data === YT.PlayerState.PAUSED) {
+              socket.emit('video-action', { room, playing: false, time });
+            } else if (e.data === YT.PlayerState.PLAYING) {
+              socket.emit('video-action', { room, playing: true, time });
+            }
+          }
+        }
+      });
+    }
+
+    function sendMsg() {
+      const inp = document.getElementById('inp');
+      if (!inp.value.trim()) return;
+      socket.emit('chat-message', { room, name: myName, text: inp.value });
+      inp.value = '';
+    }
+
+    function addMsg(name, text) {
+      const div = document.createElement('div');
+      div.className = 'msg';
+      div.innerHTML = `<span class="author">${name}</span>${text}`;
+      document.getElementById('msgs').appendChild(div);
+      document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
+    }
+
+    // Разрешаем ввод по Enter
+    document.getElementById('inp').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMsg();
+    });
+  </script>
+</body>
+</html>
