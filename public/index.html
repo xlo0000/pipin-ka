@@ -10,6 +10,7 @@
     --bg: #f8f9fa; --surface: #ffffff; --surface-hover: #f1f3f5; --border: #e9ecef;
     --text: #212529; --text-muted: #868e96; --accent: #74c0fc; --accent-hover: #4dabf7; --accent-text: #1c1c1e;
   }
+
   [data-theme="light"] { --bg: #f8f9fa; --surface: #ffffff; --surface-hover: #f1f3f5; --border: #e9ecef; --text: #212529; --text-muted: #868e96; --accent: #adb5bd; --accent-hover: #868e96; --accent-text: #ffffff; }
   [data-theme="dark"] { --bg: #121212; --surface: #1e1e1e; --surface-hover: #2c2c2c; --border: #333333; --text: #f8f9fa; --text-muted: #adb5bd; --accent: #495057; --accent-hover: #6c757d; --accent-text: #ffffff; }
   [data-theme="blue"] { --bg: #e7f5ff; --surface: #ffffff; --surface-hover: #d0ebff; --border: #a5d8ff; --text: #1864ab; --text-muted: #4dabf7; --accent: #74c0fc; --accent-hover: #4dabf7; --accent-text: #0b4f8a; }
@@ -20,10 +21,11 @@
   body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s, color 0.3s; }
   
   /* Шапка */
-  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--border); background: var(--surface); transition: 0.3s; z-index: 10; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--border); background: var(--surface); transition: 0.3s; }
   .logo { font-size: 24px; font-weight: 800; cursor: pointer; letter-spacing: -0.5px; color: var(--text); }
   .logo span { color: var(--accent); }
   
+  /* Выбор темы */
   .theme-picker { display: flex; gap: 8px; align-items: center; }
   .theme-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: 0.2s; padding: 0; }
   .theme-btn:hover { transform: scale(1.15); }
@@ -35,8 +37,8 @@
   .theme-btn[data-color="pink"] { background: #fcc2d7; }
 
   .profile-area { display: flex; align-items: center; gap: 15px; }
-  .login-btn { padding: 10px 24px; border-radius: 8px; background: var(--accent); color: var(--accent-text); border: none; font-weight: 700; cursor: pointer; font-size: 14px; transition: 0.2s; }
-  .login-btn:hover { opacity: 0.9; }
+  .login-btn { padding: 10px 24px; border-radius: 8px; background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); font-weight: 600; cursor: pointer; font-size: 14px; transition: 0.2s; }
+  .login-btn:hover { background: var(--border); }
   
   .user-info { display: flex; align-items: center; gap: 12px; cursor: pointer; position: relative; padding: 6px 12px; border-radius: 10px; transition: 0.2s; border: 1px solid transparent; }
   .user-info:hover { background: var(--surface-hover); border-color: var(--border); }
@@ -50,91 +52,62 @@
   .profile-menu button.danger { color: #ef4444; }
 
   /* Контент */
-  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; width: 100%; flex: 1; display: flex; gap: 30px; }
+  .container { max-width: 1000px; margin: 0 auto; padding: 60px 20px; width: 100%; flex: 1; }
   
-  .main-content { flex: 1; min-width: 0; }
-  .sidebar { width: 320px; display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; }
-
-  .hero { text-align: center; margin-bottom: 40px; display: flex; flex-direction: column; align-items: center; }
-  .hero h1 { font-size: 40px; font-weight: 800; margin-bottom: 15px; letter-spacing: -1px; line-height: 1.2; color: var(--text); }
-  .hero p { color: var(--text-muted); font-size: 16px; max-width: 600px; margin-bottom: 25px; line-height: 1.5; }
+  .hero { text-align: center; margin-bottom: 60px; display: flex; flex-direction: column; align-items: center; }
+  .hero h1 { font-size: 48px; font-weight: 800; margin-bottom: 20px; letter-spacing: -1px; line-height: 1.2; color: var(--text); }
+  .hero p { color: var(--text-muted); font-size: 18px; max-width: 600px; margin-bottom: 30px; line-height: 1.5; }
   
-  .create-btn { padding: 14px 28px; border-radius: 10px; background: var(--accent); color: var(--accent-text); font-weight: 700; border: none; cursor: pointer; font-size: 16px; display: inline-flex; align-items: center; gap: 10px; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+  .create-btn { padding: 16px 32px; border-radius: 10px; background: var(--accent); color: var(--accent-text); font-weight: 700; border: none; cursor: pointer; font-size: 16px; display: inline-flex; align-items: center; gap: 10px; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
   .create-btn:hover { background: var(--accent-hover); transform: translateY(-2px); }
   
-  .section-title { font-size: 20px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-  .section-title::before { content: ''; display: block; width: 4px; height: 20px; background: var(--accent); border-radius: 2px; }
+  .section-title { font-size: 24px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .section-title::before { content: ''; display: block; width: 4px; height: 24px; background: var(--accent); border-radius: 2px; }
   
-  .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-  .room-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.3s; cursor: pointer; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-  .room-card:hover { transform: translateY(-2px); border-color: var(--text-muted); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
-  .room-card .room-id { font-family: monospace; font-size: 16px; font-weight: 700; color: var(--text); }
-  .room-card .room-meta { font-size: 13px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: auto; font-weight: 500; }
-  
-  .delete-room-btn { position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); opacity: 0; transition: 0.2s; font-size: 14px; z-index: 2; }
+  /* Карточки комнат */
+  .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .room-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 15px; transition: 0.3s; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+  .room-card:hover { transform: translateY(-4px); border-color: var(--text-muted); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+  .room-card .room-id { font-family: monospace; font-size: 18px; font-weight: 700; color: var(--text); }
+  .room-card .room-meta { font-size: 14px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: auto; font-weight: 500; }
+  .room-card .room-meta span.arrow { color: var(--accent); font-size: 18px; transition: 0.3s; }
+  .room-card:hover .room-meta span.arrow { transform: translateX(5px); }
+
+  /* Кнопка удаления комнаты */
+  .delete-room-btn { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); opacity: 0; transition: 0.2s; font-size: 16px; z-index: 2; }
   .room-card:hover .delete-room-btn { opacity: 1; }
-  .delete-room-btn:hover { background: #ef4444; color: white; border-color: #ef4444; }
+  .delete-room-btn:hover { background: #ef4444; color: white; border-color: #ef4444; transform: scale(1.1); }
   
-  .empty-state { text-align: center; padding: 30px; color: var(--text-muted); font-size: 14px; background: var(--surface); border: 1px dashed var(--border); border-radius: 12px; }
+  .empty-state { text-align: center; padding: 60px; color: var(--text-muted); font-size: 16px; background: var(--surface); border: 1px dashed var(--border); border-radius: 16px; }
 
-  /* Друзья */
-  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-  .search-friends { display: flex; gap: 8px; margin-bottom: 15px; }
-  .search-friends input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; min-width: 0; }
-  .search-friends button { padding: 10px 15px; border-radius: 8px; border: none; background: var(--accent); color: var(--accent-text); cursor: pointer; font-weight: 600; flex-shrink: 0; }
-  
-  .friend-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
-  .friend-item:last-child { border-bottom: none; }
-  .friend-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .friend-info .avatar { width: 32px; height: 32px; font-size: 14px; flex-shrink: 0; }
-  .friend-name { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  
-  .btn-small { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-hover); color: var(--text); cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; flex-shrink: 0; }
-  .btn-small:hover { background: var(--border); }
-  .btn-small.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-
-  /* Чат с другом */
-  .chat-modal { position: fixed; bottom: 20px; right: 20px; width: 350px; height: 500px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 1000; }
-  .chat-modal.on { display: flex; }
-  .chat-modal-header { padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
-  .chat-modal-close { cursor: pointer; font-size: 20px; color: var(--text-muted); }
-  .chat-modal-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-  .chat-modal-input { padding: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
-  .chat-modal-input input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; min-width: 0; }
-
-  /* Сообщения */
-  .msg { display: flex; flex-direction: column; max-width: 80%; }
-  .msg.mine { align-self: flex-end; align-items: flex-end; }
-  .msg.their { align-self: flex-start; align-items: flex-start; }
-  .msg-bubble { padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.4; position: relative; word-break: break-word; }
-  .msg.mine .msg-bubble { background: var(--accent); color: var(--accent-text); border-bottom-right-radius: 2px; }
-  .msg.their .msg-bubble { background: var(--surface-hover); color: var(--text); border-bottom-left-radius: 2px; }
-
-  /* Модальное окно входа */
+  /* Модальное окно */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
   .modal-overlay.on { display: flex; }
-  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px; width: 90%; max-width: 420px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); color: var(--text); }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px; width: 90%; max-width: 420px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); animation: modalIn 0.3s ease; color: var(--text); }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   .modal h2 { text-align: center; margin-bottom: 30px; font-size: 24px; font-weight: 700; }
   .modal input { width: 100%; padding: 14px 16px; margin-bottom: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; font-size: 15px; transition: 0.2s; }
+  .modal input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
   .modal .btn { width: 100%; padding: 14px; font-size: 16px; margin-bottom: 16px; background: var(--accent); color: var(--accent-text); border: none; font-weight: 700; border-radius: 10px; cursor: pointer; transition: 0.2s; }
-  .modal .switch { text-align: center; font-size: 14px; color: var(--text-muted); cursor: pointer; font-weight: 500; }
+  .modal .btn:hover { background: var(--accent-hover); }
+  .modal .switch { text-align: center; font-size: 14px; color: var(--text-muted); cursor: pointer; font-weight: 500; transition: 0.2s; }
+  .modal .switch:hover { color: var(--text); }
 
-  @media (max-width: 900px) {
-    .container { flex-direction: column; }
-    .sidebar { width: 100%; }
-    .chat-modal { width: 100%; height: 100%; bottom: 0; right: 0; border-radius: 0; }
-  }
   @media (max-width: 600px) {
     .topbar { padding: 15px 20px; flex-wrap: wrap; gap: 15px; }
     .hero h1 { font-size: 32px; }
+    .hero p { font-size: 16px; }
+    .rooms-grid { grid-template-columns: 1fr; }
     .user-name { display: none; }
+    .container { padding: 40px 20px; }
     .theme-picker { order: 3; width: 100%; justify-content: center; }
+    .delete-room-btn { opacity: 1; } /* На телефонах кнопка удаления видна сразу */
   }
 </style>
 </head>
 <body>
 
-  <!-- Модальное окно входа -->
+  <!-- Модальное окно -->
   <div class="modal-overlay" id="authModal">
     <div class="modal">
       <h2 id="modalTitle">Вход</h2>
@@ -147,88 +120,39 @@
     </div>
   </div>
 
-  <!-- Чат с другом -->
-  <div class="chat-modal" id="friendChatModal">
-    <div class="chat-modal-header">
-      <span id="chatWithName">Чат</span>
-      <span class="chat-modal-close" onclick="closeFriendChat()">×</span>
-    </div>
-    <div class="chat-modal-messages" id="friendChatMessages"></div>
-    <div class="chat-modal-input">
-      <input type="text" id="friendChatInput" placeholder="Сообщение..." onkeydown="if(event.key==='Enter') sendFriendMsg()">
-      <button class="btn-small primary" onclick="sendFriendMsg()">→</button>
-    </div>
-  </div>
-
   <!-- Шапка -->
   <div class="topbar">
     <div class="logo" onclick="window.location.reload()">pipin<span>'ka</span></div>
-    <div class="theme-picker">
-      <button class="theme-btn" data-color="light" onclick="setTheme('light')"></button>
-      <button class="theme-btn" data-color="dark" onclick="setTheme('dark')"></button>
-      <button class="theme-btn" data-color="blue" onclick="setTheme('blue')"></button>
-      <button class="theme-btn" data-color="mint" onclick="setTheme('mint')"></button>
-      <button class="theme-btn" data-color="pink" onclick="setTheme('pink')"></button>
-    </div>
     
-    <div class="profile-area">
-      <!-- ЖЕСТКАЯ КНОПКА ВХОДА (без JS) -->
-      <button class="login-btn" id="loginBtn" onclick="openAuthModal()">Войти</button>
-      
-      <div class="user-info" id="userInfoBtn" style="display:none;">
-        <span class="user-name" id="userNameDisplay"></span>
-        <div class="avatar" id="userAvatarDisplay"></div>
-      </div>
-      <div class="profile-menu" id="profileMenu">
-        <button onclick="logout()" class="danger">Выйти</button>
-      </div>
+    <div class="theme-picker">
+      <button class="theme-btn" data-color="light" onclick="setTheme('light')" title="Светлая"></button>
+      <button class="theme-btn" data-color="dark" onclick="setTheme('dark')" title="Темная"></button>
+      <button class="theme-btn" data-color="blue" onclick="setTheme('blue')" title="Голубая"></button>
+      <button class="theme-btn" data-color="mint" onclick="setTheme('mint')" title="Мятная"></button>
+      <button class="theme-btn" data-color="pink" onclick="setTheme('pink')" title="Розовая"></button>
     </div>
+
+    <div class="profile-area" id="profileArea"></div>
   </div>
 
   <!-- Контент -->
   <div class="container">
-    <div class="main-content">
-      <div class="hero">
-        <h1>Смотрите кино вместе</h1>
-        <p>Создайте комнату, поделитесь ссылкой с друзьями и наслаждайтесь синхронизированным просмотром</p>
-        <button class="create-btn" onclick="createRoom()">Создать комнату</button>
-      </div>
-
-      <div id="myRoomsSection" style="display:none;">
-        <div class="section-title">Мои комнаты</div>
-        <div class="rooms-grid" id="roomsGrid"></div>
-      </div>
+    <div class="hero">
+      <h1>Смотрите кино вместе</h1>
+      <p>Создайте комнату, поделитесь ссылкой с друзьями и наслаждайтесь синхронизированным просмотром</p>
+      <button class="create-btn" onclick="createRoom()">
+        Создать комнату
+      </button>
     </div>
 
-    <div class="sidebar" id="sidebar" style="display:none;">
-      <div class="panel">
-        <div class="section-title" style="font-size:16px;">Друзья</div>
-        <div class="search-friends">
-          <input type="text" id="searchInput" placeholder="Имя или email..." onkeydown="if(event.key==='Enter') searchUsers()">
-          <button onclick="searchUsers()">Искать</button>
-        </div>
-        <div id="searchResults"></div>
-      </div>
-
-      <div class="panel" id="requestsPanel" style="display:none;">
-        <div class="section-title" style="font-size:16px;">Заявки</div>
-        <div id="requestsList"></div>
-      </div>
-
-      <div class="panel">
-        <div class="section-title" style="font-size:16px;">Мои друзья</div>
-        <div id="friendsList"></div>
-      </div>
+    <div id="myRoomsSection" style="display:none;">
+      <div class="section-title">Мои комнаты</div>
+      <div class="rooms-grid" id="roomsGrid"></div>
     </div>
   </div>
 
 <script>
-  const socket = io();
-  let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
-  let authMode = 'login';
-  let currentFriendId = null;
-
-  // 1. ТЕМЫ
+  // 1. Логика тем
   function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('pipinka_theme', theme);
@@ -236,43 +160,44 @@
       btn.classList.toggle('active', btn.dataset.color === theme);
     });
   }
-  setTheme(localStorage.getItem('pipinka_theme') || 'light');
 
-  // 2. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+  const savedTheme = localStorage.getItem('pipinka_theme') || 'light';
+  setTheme(savedTheme);
+
+  // 2. Логика аккаунтов
+  let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
+  let authMode = 'login';
+
   function updateUI() {
-    const loginBtn = document.getElementById('loginBtn');
-    const userInfoBtn = document.getElementById('userInfoBtn');
-    const sidebar = document.getElementById('sidebar');
+    const area = document.getElementById('profileArea');
     const myRoomsSection = document.getElementById('myRoomsSection');
 
     if (currentUser) {
-      loginBtn.style.display = 'none';
-      userInfoBtn.style.display = 'flex';
-      document.getElementById('userNameDisplay').textContent = currentUser.name;
-      
-      const ava = document.getElementById('userAvatarDisplay');
-      if (currentUser.avatar) {
-        ava.style.backgroundImage = `url('${currentUser.avatar}')`;
-        ava.textContent = '';
-      } else {
-        ava.textContent = currentUser.name.charAt(0).toUpperCase();
-      }
-
-      sidebar.style.display = 'flex';
+      area.innerHTML = `
+        <div class="user-info" id="userInfoBtn">
+          <span class="user-name">${currentUser.name}</span>
+          <div class="avatar" style="${currentUser.avatar ? `background-image:url('${currentUser.avatar}')` : ''}">
+            ${currentUser.avatar ? '' : currentUser.name.charAt(0).toUpperCase()}
+          </div>
+        </div>
+        <div class="profile-menu" id="profileMenu">
+          <button onclick="logout()" class="danger">Выйти из аккаунта</button>
+        </div>
+      `;
       myRoomsSection.style.display = 'block';
-      
       loadMyRooms();
-      loadFriends();
-      loadFriendRequests();
+
+      const userBtn = document.getElementById('userInfoBtn');
+      const menu = document.getElementById('profileMenu');
+      userBtn.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('on'); };
+      document.addEventListener('click', () => menu.classList.remove('on'));
+      menu.addEventListener('click', (e) => e.stopPropagation());
     } else {
-      loginBtn.style.display = 'block';
-      userInfoBtn.style.display = 'none';
-      sidebar.style.display = 'none';
+      area.innerHTML = `<button class="login-btn" onclick="openModal('login')">Войти</button>`;
       myRoomsSection.style.display = 'none';
     }
   }
 
-  // 3. КОМНАТЫ
   async function loadMyRooms() {
     if (!currentUser) return;
     try {
@@ -282,7 +207,7 @@
       grid.innerHTML = '';
 
       if (rooms.length === 0) {
-        grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">У вас пока нет комнат.</div>';
+        grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">У вас пока нет комнат. Создайте первую!</div>';
         return;
       }
 
@@ -291,26 +216,40 @@
         div.className = 'room-card';
         div.onclick = () => window.location.href = `/room.html?room=${roomId}`;
         div.innerHTML = `
-          <button class="delete-room-btn" onclick="deleteRoom(event, '${roomId}')" title="Удалить">×</button>
+          <button class="delete-room-btn" onclick="deleteRoom(event, '${roomId}')" title="Удалить комнату">×</button>
           <div class="room-id">${roomId}</div>
-          <div class="room-meta"><span>Войти</span><span>→</span></div>
+          <div class="room-meta">
+            <span>Войти в комнату</span>
+            <span class="arrow">→</span>
+          </div>
         `;
         grid.appendChild(div);
       });
     } catch (e) { console.error(e); }
   }
 
+  // Функция удаления комнаты
   async function deleteRoom(event, roomId) {
-    event.stopPropagation();
-    if (!confirm(`Удалить комнату ${roomId}?`)) return;
+    event.stopPropagation(); // Останавливаем переход в комнату при клике на крестик
+
+    if (!confirm(`Вы уверены, что хотите удалить комнату ${roomId} из своего списка?`)) return;
+
     try {
-      await fetch('/api/delete-room', {
+      const res = await fetch('/api/delete-room', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser.id, roomId: roomId })
       });
-      loadMyRooms();
-    } catch (e) { alert('Ошибка сети'); }
+      const data = await res.json();
+      
+      if (data.success) {
+        loadMyRooms(); // Перезагружаем список комнат
+      } else {
+        alert('Ошибка при удалении');
+      }
+    } catch (e) {
+      alert('Ошибка сети');
+    }
   }
 
   async function createRoom() {
@@ -327,187 +266,16 @@
     window.location.href = `/room.html?room=${newRoomId}`;
   }
 
-  // 4. ДРУЗЬЯ
-  async function searchUsers() {
-    const query = document.getElementById('searchInput').value.trim();
-    if (!query) return;
-    try {
-      const res = await fetch(`/api/search-users?query=${encodeURIComponent(query)}&currentUserId=${currentUser.id}`);
-      const users = await res.json();
-      const resultsDiv = document.getElementById('searchResults');
-      resultsDiv.innerHTML = '';
-
-      users.forEach(u => {
-        const div = document.createElement('div');
-        div.className = 'friend-item';
-        div.innerHTML = `
-          <div class="friend-info">
-            <div class="avatar" style="${u.avatar ? `background-image:url('${u.avatar}')` : ''}">${u.avatar ? '' : u.name.charAt(0)}</div>
-            <span class="friend-name">${u.name}</span>
-          </div>
-          <button class="btn-small" onclick="sendFriendRequest(${u.id})">Добавить</button>
-        `;
-        resultsDiv.appendChild(div);
-      });
-      if (users.length === 0) resultsDiv.innerHTML = '<div class="empty-state">Никого не найдено</div>';
-    } catch (e) { console.error(e); }
-  }
-
-  async function sendFriendRequest(receiverId) {
-    try {
-      await fetch('/api/friend-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senderId: currentUser.id, receiverId })
-      });
-      alert('Заявка отправлена!');
-    } catch (e) { alert('Ошибка'); }
-  }
-
-  async function loadFriends() {
-    if (!currentUser) return;
-    try {
-      const res = await fetch(`/api/friends/${currentUser.id}`);
-      const friends = await res.json();
-      const list = document.getElementById('friendsList');
-      list.innerHTML = '';
-
-      if (friends.length === 0) {
-        list.innerHTML = '<div class="empty-state">У вас пока нет друзей</div>';
-        return;
-      }
-
-      friends.forEach(f => {
-        const div = document.createElement('div');
-        div.className = 'friend-item';
-        div.innerHTML = `
-          <div class="friend-info">
-            <div class="avatar" style="${f.avatar ? `background-image:url('${f.avatar}')` : ''}">${f.avatar ? '' : f.name.charAt(0)}</div>
-            <span class="friend-name">${f.name}</span>
-          </div>
-          <button class="btn-small" onclick="openFriendChat(${f.id}, '${f.name}')">Чат</button>
-        `;
-        list.appendChild(div);
-      });
-    } catch (e) { console.error(e); }
-  }
-
-  async function loadFriendRequests() {
-    if (!currentUser) return;
-    try {
-      const res = await fetch(`/api/friend-requests/${currentUser.id}`);
-      const requests = await res.json();
-      const panel = document.getElementById('requestsPanel');
-      const list = document.getElementById('requestsList');
-      
-      if (requests.length === 0) {
-        panel.style.display = 'none';
-        return;
-      }
-      
-      panel.style.display = 'block';
-      list.innerHTML = '';
-      requests.forEach(r => {
-        const div = document.createElement('div');
-        div.className = 'friend-item';
-        div.innerHTML = `
-          <div class="friend-info">
-            <div class="avatar" style="${r.avatar ? `background-image:url('${r.avatar}')` : ''}">${r.avatar ? '' : r.name.charAt(0)}</div>
-            <span class="friend-name">${r.name}</span>
-          </div>
-          <button class="btn-small primary" onclick="acceptFriend(${r.request_id})">Принять</button>
-        `;
-        list.appendChild(div);
-      });
-    } catch (e) { console.error(e); }
-  }
-
-  async function acceptFriend(requestId) {
-    try {
-      await fetch('/api/accept-friend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId })
-      });
-      loadFriends();
-      loadFriendRequests();
-    } catch (e) { alert('Ошибка'); }
-  }
-
-  // 5. ЛИЧНЫЙ ЧАТ
-  async function openFriendChat(friendId, friendName) {
-    currentFriendId = friendId;
-    document.getElementById('chatWithName').textContent = friendName;
-    document.getElementById('friendChatModal').classList.add('on');
-    document.getElementById('friendChatMessages').innerHTML = '';
-    
-    try {
-      const res = await fetch(`/api/direct-messages?userId=${currentUser.id}&friendId=${friendId}`);
-      const messages = await res.json();
-      messages.forEach(m => addDirectMessageToUI(m, false));
-      document.getElementById('friendChatMessages').scrollTop = document.getElementById('friendChatMessages').scrollHeight;
-    } catch(e) { console.error(e); }
-  }
-
-  function closeFriendChat() {
-    document.getElementById('friendChatModal').classList.remove('on');
-    currentFriendId = null;
-  }
-
-  function sendFriendMsg() {
-    const inp = document.getElementById('friendChatInput');
-    const text = inp.value.trim();
-    if (!text || !currentFriendId) return;
-    
-    socket.emit('send-direct-message', {
-      senderId: currentUser.id,
-      receiverId: currentFriendId,
-      text: text
-    });
-    inp.value = '';
-  }
-
-  socket.on('new-direct-message', (msg) => {
-    if (!currentUser) return;
-    if ((msg.sender_id === currentUser.id && msg.receiver_id === currentFriendId) ||
-        (msg.sender_id === currentFriendId && msg.receiver_id === currentUser.id)) {
-      addDirectMessageToUI(msg, true);
-    }
-  });
-
-  function addDirectMessageToUI(msg, scroll = true) {
-    const container = document.getElementById('friendChatMessages');
-    const div = document.createElement('div');
-    const isMine = msg.sender_id === currentUser.id;
-    
-    div.className = `msg ${isMine ? 'mine' : 'their'}`;
-    div.innerHTML = `<div class="msg-bubble">${msg.text}</div>`;
-    container.appendChild(div);
-    if (scroll) container.scrollTop = container.scrollHeight;
-  }
-
-  // 6. АВТОРИЗАЦИЯ (Жестко через onclick)
-  function openAuthModal() {
-    authMode = 'login';
+  function openModal(mode) {
+    authMode = mode;
     document.getElementById('authModal').classList.add('on');
-    document.getElementById('authName').style.display = 'none';
-    document.getElementById('modalTitle').textContent = 'Вход';
-    document.getElementById('authBtn').textContent = 'Войти';
-    document.getElementById('authSwitch').textContent = 'Нет аккаунта? Зарегистрироваться';
+    document.getElementById('authName').style.display = mode === 'register' ? 'block' : 'none';
+    document.getElementById('modalTitle').textContent = mode === 'register' ? 'Регистрация' : 'Вход';
+    document.getElementById('authBtn').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти';
+    document.getElementById('authSwitch').textContent = mode === 'register' ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
   }
   
-  function toggleAuthMode() {
-    if (authMode === 'login') {
-      authMode = 'register';
-      document.getElementById('authName').style.display = 'block';
-      document.getElementById('modalTitle').textContent = 'Регистрация';
-      document.getElementById('authBtn').textContent = 'Создать аккаунт';
-      document.getElementById('authSwitch').textContent = 'Уже есть аккаунт? Войти';
-    } else {
-      openAuthModal();
-    }
-  }
-  
+  function toggleAuthMode() { openModal(authMode === 'login' ? 'register' : 'login'); }
   function closeModal() { document.getElementById('authModal').classList.remove('on'); }
 
   async function submitAuth() {
@@ -548,15 +316,8 @@
     }
   }
 
-  // Обработчик клика по профилю
-  document.getElementById('userInfoBtn').onclick = (e) => {
-    e.stopPropagation();
-    document.getElementById('profileMenu').classList.toggle('on');
-  };
-  document.addEventListener('click', () => document.getElementById('profileMenu').classList.remove('on'));
-
-  // Запуск
   updateUI();
+  window.addEventListener('focus', loadMyRooms);
 </script>
 </body>
 </html>
