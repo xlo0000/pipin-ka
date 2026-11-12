@@ -60,10 +60,11 @@
       Комната: <span id="roomText">...</span> 📋
     </span>
     <span style="display:flex; align-items:center; gap:5px;">
-      Ваше имя: <input id="nameInp" placeholder="Имя" style="width:100px;background:transparent;border:1px solid var(--line);padding:4px 8px;border-radius:4px;color:inherit;outline:none;">
+      <!-- ДОБАВЛЕНЫ АТРИБУТЫ АВТОЗАПОЛНЕНИЯ -->
+      Ваше имя: <input id="nameInp" placeholder="Имя" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width:100px;background:transparent;border:1px solid var(--line);padding:4px 8px;border-radius:4px;color:inherit;outline:none;">
     </span>
     <div style="flex:1"></div>
-    <input id="urlInp" placeholder="Ссылка YouTube..." style="width:250px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:white;">
+    <input id="urlInp" placeholder="Ссылка YouTube..." autocomplete="off" style="width:250px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:white;">
     <button class="btn" onclick="loadVideo()">Загрузить видео</button>
   </div>
   
@@ -83,7 +84,7 @@
     <div class="chat">
       <div class="msgs" id="msgs"></div>
       <div class="inputrow">
-        <input class="inp" id="inp" placeholder="Сообщение...">
+        <input class="inp" id="inp" placeholder="Сообщение..." autocomplete="off">
         <button class="btn" onclick="sendMsg()">→</button>
       </div>
     </div>
@@ -99,8 +100,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     let room = urlParams.get('room');
     if (!room) {
-      room = 'room-' + Math.random().toString(36).substring(2, 6); // Генерируем код, например room-x8f2
-      // Меняем ссылку в браузере, чтобы ее можно было скопировать
+      room = 'room-' + Math.random().toString(36).substring(2, 6);
       window.history.replaceState(null, '', '?room=' + room); 
     }
     document.getElementById('roomText').textContent = room;
@@ -113,14 +113,13 @@
       });
     };
 
-    // 2. Имя пользователя: берем из памяти браузера или генерируем
+    // 2. Имя пользователя
     let myName = localStorage.getItem('kinoroom_name');
     if (!myName) {
       myName = 'Гость-' + Math.floor(Math.random() * 100);
     }
     document.getElementById('nameInp').value = myName;
 
-    // Сохраняем имя, когда пользователь его меняет
     document.getElementById('nameInp').addEventListener('input', (e) => {
       localStorage.setItem('kinoroom_name', e.target.value);
     });
