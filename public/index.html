@@ -6,40 +6,16 @@
 <title>pipin'ka — Смотрим вместе</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  /* Базовые переменные (будут перезаписаны через JS) */
   :root {
-    --bg: #f8f9fa;
-    --surface: #ffffff;
-    --surface-hover: #f1f3f5;
-    --border: #e9ecef;
-    --text: #212529;
-    --text-muted: #868e96;
-    --accent: #74c0fc;
-    --accent-hover: #4dabf7;
-    --accent-text: #1c1c1e;
+    --bg: #f8f9fa; --surface: #ffffff; --surface-hover: #f1f3f5; --border: #e9ecef;
+    --text: #212529; --text-muted: #868e96; --accent: #74c0fc; --accent-hover: #4dabf7; --accent-text: #1c1c1e;
   }
 
-  /* Темы */
-  [data-theme="light"] {
-    --bg: #f8f9fa; --surface: #ffffff; --surface-hover: #f1f3f5; --border: #e9ecef;
-    --text: #212529; --text-muted: #868e96; --accent: #adb5bd; --accent-hover: #868e96; --accent-text: #ffffff;
-  }
-  [data-theme="dark"] {
-    --bg: #121212; --surface: #1e1e1e; --surface-hover: #2c2c2c; --border: #333333;
-    --text: #f8f9fa; --text-muted: #adb5bd; --accent: #495057; --accent-hover: #6c757d; --accent-text: #ffffff;
-  }
-  [data-theme="blue"] {
-    --bg: #e7f5ff; --surface: #ffffff; --surface-hover: #d0ebff; --border: #a5d8ff;
-    --text: #1864ab; --text-muted: #4dabf7; --accent: #74c0fc; --accent-hover: #4dabf7; --accent-text: #0b4f8a;
-  }
-  [data-theme="mint"] {
-    --bg: #e6fcf5; --surface: #ffffff; --surface-hover: #c3fae8; --border: #96f2d7;
-    --text: #087f5b; --text-muted: #20c997; --accent: #63e6be; --accent-hover: #38d9a9; --accent-text: #064e3b;
-  }
-  [data-theme="pink"] {
-    --bg: #fff0f6; --surface: #ffffff; --surface-hover: #ffdeeb; --border: #fcc2d7;
-    --text: #a61e4d; --text-muted: #f06595; --accent: #faa2c1; --accent-hover: #f06595; --accent-text: #6b0f31;
-  }
+  [data-theme="light"] { --bg: #f8f9fa; --surface: #ffffff; --surface-hover: #f1f3f5; --border: #e9ecef; --text: #212529; --text-muted: #868e96; --accent: #adb5bd; --accent-hover: #868e96; --accent-text: #ffffff; }
+  [data-theme="dark"] { --bg: #121212; --surface: #1e1e1e; --surface-hover: #2c2c2c; --border: #333333; --text: #f8f9fa; --text-muted: #adb5bd; --accent: #495057; --accent-hover: #6c757d; --accent-text: #ffffff; }
+  [data-theme="blue"] { --bg: #e7f5ff; --surface: #ffffff; --surface-hover: #d0ebff; --border: #a5d8ff; --text: #1864ab; --text-muted: #4dabf7; --accent: #74c0fc; --accent-hover: #4dabf7; --accent-text: #0b4f8a; }
+  [data-theme="mint"] { --bg: #e6fcf5; --surface: #ffffff; --surface-hover: #c3fae8; --border: #96f2d7; --text: #087f5b; --text-muted: #20c997; --accent: #63e6be; --accent-hover: #38d9a9; --accent-text: #064e3b; }
+  [data-theme="pink"] { --bg: #fff0f6; --surface: #ffffff; --surface-hover: #ffdeeb; --border: #fcc2d7; --text: #a61e4d; --text-muted: #f06595; --accent: #faa2c1; --accent-hover: #f06595; --accent-text: #6b0f31; }
 
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
   body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s, color 0.3s; }
@@ -88,6 +64,7 @@
   .section-title { font-size: 24px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
   .section-title::before { content: ''; display: block; width: 4px; height: 24px; background: var(--accent); border-radius: 2px; }
   
+  /* Карточки комнат */
   .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
   .room-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 15px; transition: 0.3s; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
   .room-card:hover { transform: translateY(-4px); border-color: var(--text-muted); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
@@ -95,6 +72,11 @@
   .room-card .room-meta { font-size: 14px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: auto; font-weight: 500; }
   .room-card .room-meta span.arrow { color: var(--accent); font-size: 18px; transition: 0.3s; }
   .room-card:hover .room-meta span.arrow { transform: translateX(5px); }
+
+  /* Кнопка удаления комнаты */
+  .delete-room-btn { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); opacity: 0; transition: 0.2s; font-size: 16px; z-index: 2; }
+  .room-card:hover .delete-room-btn { opacity: 1; }
+  .delete-room-btn:hover { background: #ef4444; color: white; border-color: #ef4444; transform: scale(1.1); }
   
   .empty-state { text-align: center; padding: 60px; color: var(--text-muted); font-size: 16px; background: var(--surface); border: 1px dashed var(--border); border-radius: 16px; }
 
@@ -119,6 +101,7 @@
     .user-name { display: none; }
     .container { padding: 40px 20px; }
     .theme-picker { order: 3; width: 100%; justify-content: center; }
+    .delete-room-btn { opacity: 1; } /* На телефонах кнопка удаления видна сразу */
   }
 </style>
 </head>
@@ -178,7 +161,6 @@
     });
   }
 
-  // Инициализация темы
   const savedTheme = localStorage.getItem('pipinka_theme') || 'light';
   setTheme(savedTheme);
 
@@ -234,6 +216,7 @@
         div.className = 'room-card';
         div.onclick = () => window.location.href = `/room.html?room=${roomId}`;
         div.innerHTML = `
+          <button class="delete-room-btn" onclick="deleteRoom(event, '${roomId}')" title="Удалить комнату">×</button>
           <div class="room-id">${roomId}</div>
           <div class="room-meta">
             <span>Войти в комнату</span>
@@ -243,6 +226,30 @@
         grid.appendChild(div);
       });
     } catch (e) { console.error(e); }
+  }
+
+  // Функция удаления комнаты
+  async function deleteRoom(event, roomId) {
+    event.stopPropagation(); // Останавливаем переход в комнату при клике на крестик
+
+    if (!confirm(`Вы уверены, что хотите удалить комнату ${roomId} из своего списка?`)) return;
+
+    try {
+      const res = await fetch('/api/delete-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, roomId: roomId })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        loadMyRooms(); // Перезагружаем список комнат
+      } else {
+        alert('Ошибка при удалении');
+      }
+    } catch (e) {
+      alert('Ошибка сети');
+    }
   }
 
   async function createRoom() {
