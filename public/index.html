@@ -3,100 +3,162 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KinoRoom — Главная</title>
+<title>pipin'ka — Смотрим вместе</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a; --text:#e8eaf0; --text2:#9aa3b2; --accent:#e8eaf0; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+  /* Базовые переменные (будут перезаписаны через JS) */
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-hover: #f1f3f5;
+    --border: #e9ecef;
+    --text: #212529;
+    --text-muted: #868e96;
+    --accent: #74c0fc;
+    --accent-hover: #4dabf7;
+    --accent-text: #1c1c1e;
+  }
+
+  /* Темы */
+  [data-theme="light"] {
+    --bg: #f8f9fa; --surface: #ffffff; --surface-hover: #f1f3f5; --border: #e9ecef;
+    --text: #212529; --text-muted: #868e96; --accent: #adb5bd; --accent-hover: #868e96; --accent-text: #ffffff;
+  }
+  [data-theme="dark"] {
+    --bg: #121212; --surface: #1e1e1e; --surface-hover: #2c2c2c; --border: #333333;
+    --text: #f8f9fa; --text-muted: #adb5bd; --accent: #495057; --accent-hover: #6c757d; --accent-text: #ffffff;
+  }
+  [data-theme="blue"] {
+    --bg: #e7f5ff; --surface: #ffffff; --surface-hover: #d0ebff; --border: #a5d8ff;
+    --text: #1864ab; --text-muted: #4dabf7; --accent: #74c0fc; --accent-hover: #4dabf7; --accent-text: #0b4f8a;
+  }
+  [data-theme="mint"] {
+    --bg: #e6fcf5; --surface: #ffffff; --surface-hover: #c3fae8; --border: #96f2d7;
+    --text: #087f5b; --text-muted: #20c997; --accent: #63e6be; --accent-hover: #38d9a9; --accent-text: #064e3b;
+  }
+  [data-theme="pink"] {
+    --bg: #fff0f6; --surface: #ffffff; --surface-hover: #ffdeeb; --border: #fcc2d7;
+    --text: #a61e4d; --text-muted: #f06595; --accent: #faa2c1; --accent-hover: #f06595; --accent-text: #6b0f31;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+  body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s, color 0.3s; }
   
   /* Шапка */
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:15px 30px; border-bottom:1px solid var(--line); background:var(--panel); }
-  .logo { font-size:22px; font-weight:bold; cursor:pointer; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--border); background: var(--surface); transition: 0.3s; }
+  .logo { font-size: 24px; font-weight: 800; cursor: pointer; letter-spacing: -0.5px; color: var(--text); }
+  .logo span { color: var(--accent); }
   
+  /* Выбор темы */
+  .theme-picker { display: flex; gap: 8px; align-items: center; }
+  .theme-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: 0.2s; padding: 0; }
+  .theme-btn:hover { transform: scale(1.15); }
+  .theme-btn.active { border-color: var(--text); }
+  .theme-btn[data-color="blue"] { background: #a5d8ff; }
+  .theme-btn[data-color="light"] { background: #f8f9fa; border-color: #ced4da; }
+  .theme-btn[data-color="dark"] { background: #212529; }
+  .theme-btn[data-color="mint"] { background: #96f2d7; }
+  .theme-btn[data-color="pink"] { background: #fcc2d7; }
+
   .profile-area { display: flex; align-items: center; gap: 15px; }
-  .login-btn { padding: 8px 20px; border-radius: 20px; background: var(--accent); color: #111; font-weight: bold; border: none; cursor: pointer; font-size: 15px; }
-  .login-btn:hover { background: white; }
+  .login-btn { padding: 10px 24px; border-radius: 8px; background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); font-weight: 600; cursor: pointer; font-size: 14px; transition: 0.2s; }
+  .login-btn:hover { background: var(--border); }
   
-  .user-info { display: flex; align-items: center; gap: 10px; cursor: pointer; position: relative; padding: 5px 10px; border-radius: 10px; transition: 0.2s; }
-  .user-info:hover { background: var(--panel2); }
-  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--panel2); border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: bold; background-size: cover; background-position: center; }
-  .user-name { font-size: 15px; font-weight: 500; }
+  .user-info { display: flex; align-items: center; gap: 12px; cursor: pointer; position: relative; padding: 6px 12px; border-radius: 10px; transition: 0.2s; border: 1px solid transparent; }
+  .user-info:hover { background: var(--surface-hover); border-color: var(--border); }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--surface-hover); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; background-size: cover; background-position: center; }
+  .user-name { font-size: 15px; font-weight: 600; }
   
-  /* Выпадающее меню профиля */
-  .profile-menu { display: none; position: absolute; top: 55px; right: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; width: 200px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); flex-direction: column; gap: 5px; }
+  .profile-menu { display: none; position: absolute; top: 55px; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px; width: 200px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.1); flex-direction: column; }
   .profile-menu.on { display: flex; }
-  .profile-menu button { padding: 10px; text-align: left; background: transparent; border: none; color: var(--text); cursor: pointer; border-radius: 5px; font-size: 14px; }
-  .profile-menu button:hover { background: var(--panel2); }
-  .profile-menu button.danger { color: #e5534b; }
+  .profile-menu button { padding: 12px 16px; text-align: left; background: transparent; border: none; color: var(--text); cursor: pointer; border-radius: 8px; font-size: 14px; font-weight: 500; transition: 0.2s; }
+  .profile-menu button:hover { background: var(--surface-hover); }
+  .profile-menu button.danger { color: #ef4444; }
 
   /* Контент */
-  .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; width: 100%; flex: 1; }
+  .container { max-width: 1000px; margin: 0 auto; padding: 60px 20px; width: 100%; flex: 1; }
   
-  .hero { text-align: center; margin-bottom: 40px; }
-  .hero h1 { font-size: 32px; margin-bottom: 10px; }
-  .hero p { color: var(--text2); font-size: 16px; margin-bottom: 20px; }
+  .hero { text-align: center; margin-bottom: 60px; display: flex; flex-direction: column; align-items: center; }
+  .hero h1 { font-size: 48px; font-weight: 800; margin-bottom: 20px; letter-spacing: -1px; line-height: 1.2; color: var(--text); }
+  .hero p { color: var(--text-muted); font-size: 18px; max-width: 600px; margin-bottom: 30px; line-height: 1.5; }
   
-  .create-btn { padding: 12px 30px; border-radius: 8px; background: var(--accent); color: #111; font-weight: bold; border: none; cursor: pointer; font-size: 16px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
-  .create-btn:hover { background: white; transform: translateY(-2px); }
+  .create-btn { padding: 16px 32px; border-radius: 10px; background: var(--accent); color: var(--accent-text); font-weight: 700; border: none; cursor: pointer; font-size: 16px; display: inline-flex; align-items: center; gap: 10px; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+  .create-btn:hover { background: var(--accent-hover); transform: translateY(-2px); }
   
-  .section-title { font-size: 20px; margin-bottom: 15px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+  .section-title { font-size: 24px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .section-title::before { content: ''; display: block; width: 4px; height: 24px; background: var(--accent); border-radius: 2px; }
   
-  .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-  .room-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.2s; cursor: pointer; }
-  .room-card:hover { border-color: var(--text2); transform: translateY(-2px); }
-  .room-card .room-id { font-family: monospace; font-size: 16px; font-weight: bold; color: var(--accent); }
-  .room-card .room-meta { font-size: 13px; color: var(--text2); display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .room-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 15px; transition: 0.3s; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+  .room-card:hover { transform: translateY(-4px); border-color: var(--text-muted); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+  .room-card .room-id { font-family: monospace; font-size: 18px; font-weight: 700; color: var(--text); }
+  .room-card .room-meta { font-size: 14px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: auto; font-weight: 500; }
+  .room-card .room-meta span.arrow { color: var(--accent); font-size: 18px; transition: 0.3s; }
+  .room-card:hover .room-meta span.arrow { transform: translateX(5px); }
   
-  .empty-state { text-align: center; padding: 40px; color: var(--text2); font-size: 15px; background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; }
+  .empty-state { text-align: center; padding: 60px; color: var(--text-muted); font-size: 16px; background: var(--surface); border: 1px dashed var(--border); border-radius: 16px; }
 
-  /* Модальное окно Авторизации */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
+  /* Модальное окно */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
   .modal-overlay.on { display: flex; }
-  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 25px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-  .modal h2 { text-align: center; margin-bottom: 20px; font-size: 22px; }
-  .modal input { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: white; outline: none; font-size: 14px; }
-  .modal .btn { width: 100%; padding: 12px; font-size: 16px; margin-bottom: 10px; background: var(--accent); color: #111; border: none; font-weight: bold; border-radius: 8px; cursor: pointer; }
-  .modal .switch { text-align: center; font-size: 13px; color: var(--text2); cursor: pointer; }
-  .modal .switch:hover { color: white; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px; width: 90%; max-width: 420px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); animation: modalIn 0.3s ease; color: var(--text); }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal h2 { text-align: center; margin-bottom: 30px; font-size: 24px; font-weight: 700; }
+  .modal input { width: 100%; padding: 14px 16px; margin-bottom: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; font-size: 15px; transition: 0.2s; }
+  .modal input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
+  .modal .btn { width: 100%; padding: 14px; font-size: 16px; margin-bottom: 16px; background: var(--accent); color: var(--accent-text); border: none; font-weight: 700; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+  .modal .btn:hover { background: var(--accent-hover); }
+  .modal .switch { text-align: center; font-size: 14px; color: var(--text-muted); cursor: pointer; font-weight: 500; transition: 0.2s; }
+  .modal .switch:hover { color: var(--text); }
 
   @media (max-width: 600px) {
-    .topbar { padding: 15px; }
-    .hero h1 { font-size: 24px; }
+    .topbar { padding: 15px 20px; flex-wrap: wrap; gap: 15px; }
+    .hero h1 { font-size: 32px; }
+    .hero p { font-size: 16px; }
     .rooms-grid { grid-template-columns: 1fr; }
     .user-name { display: none; }
+    .container { padding: 40px 20px; }
+    .theme-picker { order: 3; width: 100%; justify-content: center; }
   }
 </style>
 </head>
 <body>
 
-  <!-- Модальное окно входа -->
+  <!-- Модальное окно -->
   <div class="modal-overlay" id="authModal">
     <div class="modal">
-      <h2 id="modalTitle">Вход в аккаунт</h2>
+      <h2 id="modalTitle">Вход</h2>
       <input type="email" id="authEmail" placeholder="Email" autocomplete="off">
       <input type="password" id="authPassword" placeholder="Пароль">
       <input type="text" id="authName" placeholder="Ваше имя" style="display:none;" autocomplete="off">
       <button class="btn" onclick="submitAuth()" id="authBtn">Войти</button>
       <div class="switch" id="authSwitch" onclick="toggleAuthMode()">Нет аккаунта? Зарегистрироваться</div>
-      <div style="text-align:center; margin-top:10px;"><span class="switch" onclick="closeModal()" style="font-size:12px;">Закрыть</span></div>
+      <div style="text-align:center; margin-top:20px;"><span class="switch" onclick="closeModal()" style="font-size:13px;">Закрыть</span></div>
     </div>
   </div>
 
   <!-- Шапка -->
   <div class="topbar">
-    <div class="logo" onclick="window.location.reload()">🎬 KinoRoom</div>
-    <div class="profile-area" id="profileArea">
-      <!-- Сюда подставляется либо кнопка, либо профиль -->
+    <div class="logo" onclick="window.location.reload()">pipin<span>'ka</span></div>
+    
+    <div class="theme-picker">
+      <button class="theme-btn" data-color="light" onclick="setTheme('light')" title="Светлая"></button>
+      <button class="theme-btn" data-color="dark" onclick="setTheme('dark')" title="Темная"></button>
+      <button class="theme-btn" data-color="blue" onclick="setTheme('blue')" title="Голубая"></button>
+      <button class="theme-btn" data-color="mint" onclick="setTheme('mint')" title="Мятная"></button>
+      <button class="theme-btn" data-color="pink" onclick="setTheme('pink')" title="Розовая"></button>
     </div>
+
+    <div class="profile-area" id="profileArea"></div>
   </div>
 
   <!-- Контент -->
   <div class="container">
     <div class="hero">
-      <h1>Смотрите видео вместе с друзьями</h1>
-      <p>Создайте комнату, скиньте ссылку друзьям и наслаждайтесь синхронизированным просмотром</p>
+      <h1>Смотрите кино вместе</h1>
+      <p>Создайте комнату, поделитесь ссылкой с друзьями и наслаждайтесь синхронизированным просмотром</p>
       <button class="create-btn" onclick="createRoom()">
-        <span>✨</span> Создать новую комнату
+        Создать комнату
       </button>
     </div>
 
@@ -107,10 +169,23 @@
   </div>
 
 <script>
+  // 1. Логика тем
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('pipinka_theme', theme);
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.color === theme);
+    });
+  }
+
+  // Инициализация темы
+  const savedTheme = localStorage.getItem('pipinka_theme') || 'light';
+  setTheme(savedTheme);
+
+  // 2. Логика аккаунтов
   let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
   let authMode = 'login';
 
-  // 1. Обновление интерфейса шапки
   function updateUI() {
     const area = document.getElementById('profileArea');
     const myRoomsSection = document.getElementById('myRoomsSection');
@@ -130,29 +205,22 @@
       myRoomsSection.style.display = 'block';
       loadMyRooms();
 
-      // Логика выпадающего меню
       const userBtn = document.getElementById('userInfoBtn');
       const menu = document.getElementById('profileMenu');
-      userBtn.onclick = (e) => {
-        e.stopPropagation();
-        menu.classList.toggle('on');
-      };
+      userBtn.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('on'); };
       document.addEventListener('click', () => menu.classList.remove('on'));
       menu.addEventListener('click', (e) => e.stopPropagation());
-
     } else {
       area.innerHTML = `<button class="login-btn" onclick="openModal('login')">Войти</button>`;
       myRoomsSection.style.display = 'none';
     }
   }
 
-  // 2. Загрузка комнат пользователя
   async function loadMyRooms() {
     if (!currentUser) return;
     try {
       const res = await fetch(`/api/my-rooms/${currentUser.id}`);
       const rooms = await res.json();
-      
       const grid = document.getElementById('roomsGrid');
       grid.innerHTML = '';
 
@@ -168,21 +236,17 @@
         div.innerHTML = `
           <div class="room-id">${roomId}</div>
           <div class="room-meta">
-            <span>Нажмите, чтобы войти</span>
-            <span>→</span>
+            <span>Войти в комнату</span>
+            <span class="arrow">→</span>
           </div>
         `;
         grid.appendChild(div);
       });
-    } catch (e) {
-      console.error('Ошибка загрузки комнат', e);
-    }
+    } catch (e) { console.error(e); }
   }
 
-  // 3. Создание новой комнаты
   async function createRoom() {
     const newRoomId = 'room-' + Math.random().toString(36).substring(2, 8);
-    
     if (currentUser) {
       try {
         await fetch('/api/link-room', {
@@ -192,27 +256,20 @@
         });
       } catch(e) {}
     }
-    
     window.location.href = `/room.html?room=${newRoomId}`;
   }
 
-  // 4. Авторизация (модальное окно)
   function openModal(mode) {
     authMode = mode;
     document.getElementById('authModal').classList.add('on');
     document.getElementById('authName').style.display = mode === 'register' ? 'block' : 'none';
-    document.getElementById('modalTitle').textContent = mode === 'register' ? 'Регистрация' : 'Вход в аккаунт';
+    document.getElementById('modalTitle').textContent = mode === 'register' ? 'Регистрация' : 'Вход';
     document.getElementById('authBtn').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти';
     document.getElementById('authSwitch').textContent = mode === 'register' ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
   }
   
-  function toggleAuthMode() {
-    openModal(authMode === 'login' ? 'register' : 'login');
-  }
-  
-  function closeModal() {
-    document.getElementById('authModal').classList.remove('on');
-  }
+  function toggleAuthMode() { openModal(authMode === 'login' ? 'register' : 'login'); }
+  function closeModal() { document.getElementById('authModal').classList.remove('on'); }
 
   async function submitAuth() {
     const email = document.getElementById('authEmail').value.trim();
@@ -241,9 +298,7 @@
       } else {
         alert(data.error || 'Ошибка');
       }
-    } catch (err) {
-      alert('Ошибка сети. Проверьте подключение.');
-    }
+    } catch (err) { alert('Ошибка сети.'); }
   }
 
   function logout() {
@@ -254,7 +309,6 @@
     }
   }
 
-  // Инициализация
   updateUI();
   window.addEventListener('focus', loadMyRooms);
 </script>
