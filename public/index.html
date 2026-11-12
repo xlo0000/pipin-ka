@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KinoRoom — синхронизация</title>
+<title>KinoRoom — смотрим вместе</title>
 <style>
   :root { --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a; --text:#e8eaf0; --text2:#9aa3b2; --accent:#e8eaf0; --c1:#4c8dff; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
   .topbar { display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid var(--line); background:var(--panel); }
-  .roomcode { font-family:monospace; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel2); }
+  .roomcode { font-family:monospace; padding:6px 12px; border:1px solid var(--line); border-radius:6px; background:var(--panel2); cursor:pointer; transition: 0.2s; }
+  .roomcode:hover { border-color: var(--text2); background: var(--line); }
   .body { flex:1; display:flex; min-height:0; }
   .video-pane { flex:2; display:flex; flex-direction:column; border-right:1px solid var(--line); background:#000; }
   
@@ -17,7 +18,7 @@
   
   /* Панель управления */
   .controls { display:flex; align-items:center; gap:12px; padding:12px 16px; border-top:1px solid var(--line); background:var(--panel); }
-  .btn { padding:8px 14px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--text); cursor:pointer; font-size:14px; }
+  .btn { padding:8px 14px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--text); cursor:pointer; font-size:14px; white-space:nowrap; }
   .btn:hover { background:var(--line); }
   .btn:disabled { opacity: 0.5; cursor: default; }
   .progress { flex:1; height:24px; cursor:pointer; display:flex; align-items:center; }
@@ -40,19 +41,11 @@
   /* АДАПТАЦИЯ ПОД ТЕЛЕФОНЫ */
   @media (max-width: 768px) {
     .body { flex-direction: column; }
-    
-    /* Увеличили видео до 50% высоты экрана */
-    .video-pane { 
-      flex: none; 
-      height: 50vh; 
-      border-right: none; 
-      border-bottom: 1px solid var(--line); 
-    }
-    
+    .video-pane { flex: none; height: 50vh; border-right: none; border-bottom: 1px solid var(--line); }
     .chat { flex: 1; min-width: 100%; }
     .topbar { flex-wrap: wrap; padding: 10px; gap: 8px; }
     .topbar strong { display: none; }
-    .topbar input, .topbar .btn, .roomcode { flex: 1; min-width: 120px; font-size: 14px; }
+    .topbar input, .topbar .btn { font-size: 14px; }
     #urlInp { min-width: 100%; margin-bottom: 4px; }
     .controls { padding: 8px; gap: 8px; }
     .btn { padding: 10px 16px; font-size: 15px; }
@@ -62,9 +55,13 @@
 </head>
 <body>
   <div class="topbar">
-    <strong>🎬 KinoRoom v2</strong>
-    <span class="roomcode">Комната: <input id="roomInp" value="room1" style="width:80px;background:transparent;border:none;color:inherit;outline:none;"></span>
-    <span>Ваше имя: <input id="nameInp" placeholder="Введите имя" style="width:100px;background:transparent;border:none;color:inherit;outline:none;"></span>
+    <strong>🎬 KinoRoom</strong>
+    <span class="roomcode" id="roomDisplay" title="Нажмите, чтобы скопировать ссылку">
+      Комната: <span id="roomText">...</span> 📋
+    </span>
+    <span style="display:flex; align-items:center; gap:5px;">
+      Ваше имя: <input id="nameInp" placeholder="Имя" style="width:100px;background:transparent;border:1px solid var(--line);padding:4px 8px;border-radius:4px;color:inherit;outline:none;">
+    </span>
     <div style="flex:1"></div>
     <input id="urlInp" placeholder="Ссылка YouTube..." style="width:250px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:white;">
     <button class="btn" onclick="loadVideo()">Загрузить видео</button>
@@ -96,13 +93,41 @@
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     let player, socket, isRemote = false;
-    const room = 'room1'; 
-    let myName = 'Гость-' + Math.floor(Math.random() * 1000);
     let tickTimer = null;
+
+    // 1. Получаем комнату из ссылки (если есть) или генерируем новую
+    const urlParams = new URLSearchParams(window.location.search);
+    let room = urlParams.get('room');
+    if (!room) {
+      room = 'room-' + Math.random().toString(36).substring(2, 6); // Генерируем код, например room-x8f2
+      // Меняем ссылку в браузере, чтобы ее можно было скопировать
+      window.history.replaceState(null, '', '?room=' + room); 
+    }
+    document.getElementById('roomText').textContent = room;
+
+    // Кнопка копирования ссылки
+    document.getElementById('roomDisplay').onclick = () => {
+      const link = window.location.href;
+      navigator.clipboard.writeText(link).then(() => {
+        alert('Ссылка на комнату скопирована! Отправь её другу:\n' + link);
+      });
+    };
+
+    // 2. Имя пользователя: берем из памяти браузера или генерируем
+    let myName = localStorage.getItem('kinoroom_name');
+    if (!myName) {
+      myName = 'Гость-' + Math.floor(Math.random() * 100);
+    }
+    document.getElementById('nameInp').value = myName;
+
+    // Сохраняем имя, когда пользователь его меняет
+    document.getElementById('nameInp').addEventListener('input', (e) => {
+      localStorage.setItem('kinoroom_name', e.target.value);
+    });
 
     // Инициализация сокета
     socket = io();
-    socket.emit('join', { room, name: myName });
+    socket.emit('join', { room: room, name: myName });
 
     socket.on('room-state', (state) => {
       if (state.videoId) {
@@ -142,7 +167,7 @@
       
       if (!id) return alert('Ссылка неверная. Нужна ссылка вида youtube.com/watch?v=...');
       
-      socket.emit('video-action', { room, videoId: id, playing: true, time: 0 });
+      socket.emit('video-action', { room: room, videoId: id, playing: true, time: 0 });
       
       if (player) {
         player.loadVideoById(id);
@@ -162,7 +187,7 @@
         events: {
           onReady: () => {
             document.getElementById('playBtn').disabled = false;
-            document.getElementById('fsBtn').style.display = 'block'; // Показываем кнопку полного экрана
+            document.getElementById('fsBtn').style.display = 'block';
             document.getElementById('player').style.pointerEvents = 'none'; 
             startTick();
           },
@@ -171,10 +196,10 @@
             const time = player.getCurrentTime();
             if (e.data === YT.PlayerState.PAUSED) {
               document.getElementById('playBtn').textContent = 'Смотреть';
-              socket.emit('video-action', { room, playing: false, time });
+              socket.emit('video-action', { room: room, playing: false, time: time });
             } else if (e.data === YT.PlayerState.PLAYING) {
               document.getElementById('playBtn').textContent = 'Пауза';
-              socket.emit('video-action', { room, playing: true, time });
+              socket.emit('video-action', { room: room, playing: true, time: time });
             }
           }
         }
@@ -188,10 +213,10 @@
       const time = player.getCurrentTime();
       if (st === YT.PlayerState.PLAYING) {
         player.pauseVideo();
-        socket.emit('video-action', { room, playing: false, time });
+        socket.emit('video-action', { room: room, playing: false, time: time });
       } else {
         player.playVideo();
-        socket.emit('video-action', { room, playing: true, time });
+        socket.emit('video-action', { room: room, playing: true, time: time });
       }
     };
 
@@ -206,13 +231,13 @@
       
       player.seekTo(newTime, true);
       socket.emit('video-action', { 
-        room, 
+        room: room, 
         playing: player.getPlayerState() === YT.PlayerState.PLAYING, 
         time: newTime 
       });
     };
 
-    // Таймер обновления полосы
+    // Таймер
     function startTick() {
       if(tickTimer) clearInterval(tickTimer);
       tickTimer = setInterval(() => {
@@ -228,13 +253,13 @@
 
     function fmt(s) { s = Math.max(0, Math.floor(s)); const m = Math.floor(s/60), ss = s%60; return m + ':' + (ss<10?'0':'') + ss; }
 
-    // --- Полный экран (независимо для каждого) ---
+    // --- Полный экран ---
     document.getElementById('fsBtn').onclick = () => {
       const videoPane = document.getElementById('videoPane');
       if (!document.fullscreenElement) {
         if (videoPane.requestFullscreen) videoPane.requestFullscreen();
-        else if (videoPane.webkitRequestFullscreen) videoPane.webkitRequestFullscreen(); // Safari
-        else if (videoPane.msRequestFullscreen) videoPane.msRequestFullscreen(); // IE11
+        else if (videoPane.webkitRequestFullscreen) videoPane.webkitRequestFullscreen();
+        else if (videoPane.msRequestFullscreen) videoPane.msRequestFullscreen();
       } else {
         if (document.exitFullscreen) document.exitFullscreen();
       }
@@ -245,7 +270,7 @@
       const inp = document.getElementById('inp');
       if (!inp.value.trim()) return;
       const name = document.getElementById('nameInp').value.trim() || myName;
-      socket.emit('chat-message', { room, name: name, text: inp.value });
+      socket.emit('chat-message', { room: room, name: name, text: inp.value });
       inp.value = '';
     }
 
