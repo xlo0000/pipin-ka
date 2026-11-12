@@ -11,32 +11,47 @@
   .topbar { display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid var(--line); background:var(--panel); }
   .roomcode { font-family:monospace; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel2); }
   .body { flex:1; display:flex; min-height:0; }
-  .video-pane { flex:2; display:flex; flex-direction:column; }
+  .video-pane { flex:2; display:flex; flex-direction:column; border-right:1px solid var(--line); }
   #player { width:100%; flex:1; background:#000; }
-  .chat { flex:1; display:flex; flex-direction:column; border-left:1px solid var(--line); background:var(--panel); min-width:280px; }
+  
+  /* Новые стили для панели управления */
+  .controls { display:flex; align-items:center; gap:12px; padding:12px 16px; border-top:1px solid var(--line); background:var(--panel); }
+  .btn { padding:8px 14px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--text); cursor:pointer; font-size:14px; }
+  .btn:hover { background:var(--line); }
+  .progress { flex:1; height:24px; cursor:pointer; display:flex; align-items:center; }
+  .track { width:100%; height:5px; background:var(--line); border-radius:3px; position:relative; }
+  .fill { position:absolute; left:0; top:0; bottom:0; background:var(--accent); border-radius:3px; width:0; }
+  .time { font-size:12px; color:var(--text2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .chat { flex:1; display:flex; flex-direction:column; background:var(--panel); min-width:280px; }
   .msgs { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; }
   .msg { font-size:14px; line-height:1.4; }
   .author { font-weight:bold; font-size:12px; color:var(--text2); display:block; margin-bottom:2px; }
   .inputrow { padding:12px; border-top:1px solid var(--line); display:flex; gap:8px; }
   .inp { flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--text); outline:none; }
-  .btn { padding:8px 14px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--text); cursor:pointer; }
-  .btn:hover { background:var(--line); }
 </style>
 </head>
 <body>
   <div class="topbar">
     <strong>🎬 KinoRoom v2</strong>
     <span class="roomcode">Комната: <input id="roomInp" value="room1" style="width:80px;background:transparent;border:none;color:inherit;outline:none;"></span>
-    <span>Ваше имя: <input id="nameInp" value="Гость" style="width:80px;background:transparent;border:none;color:inherit;outline:none;"></span>
+    <span>Ваше имя: <input id="nameInp" placeholder="Введите имя" style="width:100px;background:transparent;border:none;color:inherit;outline:none;"></span>
     <div style="flex:1"></div>
     <input id="urlInp" placeholder="Ссылка YouTube..." style="width:250px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:white;">
     <button class="btn" onclick="loadVideo()">Загрузить видео</button>
-    <button class="btn" onclick="location.reload()">Переподключиться</button>
   </div>
   
   <div class="body">
     <div class="video-pane">
       <div id="player"></div>
+      <!-- Панель управления -->
+      <div class="controls">
+        <button class="btn" id="playBtn" disabled>Смотреть</button>
+        <div class="progress" id="progress">
+          <div class="track"><div class="fill" id="fill"></div></div>
+        </div>
+        <span class="time" id="timeLbl">0:00 / 0:00</span>
+      </div>
     </div>
     <div class="chat">
       <div class="msgs" id="msgs"></div>
@@ -51,9 +66,11 @@
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     let player, socket, isRemote = false;
-    const room = 'room1'; // Можно сделать динамическим, но для теста фиксируем
-    const myName = Math.random().toString(36).substring(2, 6); // Случайное имя для теста
-    
+    const room = 'room1'; 
+    let myName = 'Гость-' + Math.floor(Math.random() * 1000);
+    let tickTimer = null;
+
+    // Инициализация сокета
     socket = io();
     socket.emit('join', { room, name: myName });
 
@@ -84,10 +101,16 @@
       addMsg(msg.name, msg.text);
     });
 
+    // --- Управление видео ---
     function loadVideo() {
       const url = document.getElementById('urlInp').value;
-      const id = new URL(url).searchParams.get('v');
-      if (!id) return alert('Ссылка неверная');
+      let id = null;
+      try {
+        const u = new URL(url);
+        id = u.searchParams.get('v') || (u.hostname.includes('youtu.be') ? u.pathname.slice(1) : null);
+      } catch(e) {}
+      
+      if (!id) return alert('Ссылка неверная. Нужна ссылка вида youtube.com/watch?v=...');
       
       socket.emit('video-action', { room, videoId: id, playing: true, time: 0 });
       
@@ -108,14 +131,19 @@
         playerVars: { rel: 0, origin: window.location.origin },
         events: {
           onReady: () => {
-            document.getElementById('player').style.pointerEvents = 'none'; // Отключаем прямые клики по плееру
+            document.getElementById('playBtn').disabled = false;
+            // Отключаем клики по самому плееру, чтобы управлять только кнопками
+            document.getElementById('player').style.pointerEvents = 'none'; 
+            startTick();
           },
           onStateChange: (e) => {
             if (isRemote) return;
             const time = player.getCurrentTime();
             if (e.data === YT.PlayerState.PAUSED) {
+              document.getElementById('playBtn').textContent = 'Смотреть';
               socket.emit('video-action', { room, playing: false, time });
             } else if (e.data === YT.PlayerState.PLAYING) {
+              document.getElementById('playBtn').textContent = 'Пауза';
               socket.emit('video-action', { room, playing: true, time });
             }
           }
@@ -123,10 +151,60 @@
       });
     }
 
+    // Логика кнопки паузы
+    document.getElementById('playBtn').onclick = () => {
+      if (!player) return;
+      const st = player.getPlayerState();
+      const time = player.getCurrentTime();
+      if (st === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
+        socket.emit('video-action', { room, playing: false, time });
+      } else {
+        player.playVideo();
+        socket.emit('video-action', { room, playing: true, time });
+      }
+    };
+
+    // Логика перемотки
+    document.getElementById('progress').onclick = function(e) {
+      if (!player) return;
+      const dur = player.getDuration();
+      if (!dur) return;
+      const r = this.getBoundingClientRect();
+      const ratio = (e.clientX - r.left) / r.width;
+      const newTime = dur * ratio;
+      
+      player.seekTo(newTime, true);
+      // Отправляем всем, что мы перемотали
+      socket.emit('video-action', { 
+        room, 
+        playing: player.getPlayerState() === YT.PlayerState.PLAYING, 
+        time: newTime 
+      });
+    };
+
+    // Обновление полосы времени
+    function startTick() {
+      if(tickTimer) clearInterval(tickTimer);
+      tickTimer = setInterval(() => {
+        if (!player || typeof player.getCurrentTime !== 'function') return;
+        const cur = player.getCurrentTime() || 0;
+        const dur = player.getDuration() || 0;
+        if (dur > 0) {
+          document.getElementById('fill').style.width = (cur / dur * 100) + '%';
+          document.getElementById('timeLbl').textContent = fmt(cur) + ' / ' + fmt(dur);
+        }
+      }, 250);
+    }
+
+    function fmt(s) { s = Math.max(0, Math.floor(s)); const m = Math.floor(s/60), ss = s%60; return m + ':' + (ss<10?'0':'') + ss; }
+
+    // --- Чат ---
     function sendMsg() {
       const inp = document.getElementById('inp');
       if (!inp.value.trim()) return;
-      socket.emit('chat-message', { room, name: myName, text: inp.value });
+      const name = document.getElementById('nameInp').value.trim() || myName;
+      socket.emit('chat-message', { room, name: name, text: inp.value });
       inp.value = '';
     }
 
@@ -138,7 +216,6 @@
       document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
     }
 
-    // Разрешаем ввод по Enter
     document.getElementById('inp').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') sendMsg();
     });
