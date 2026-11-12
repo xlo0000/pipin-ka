@@ -171,9 +171,10 @@
       <button class="theme-btn" data-color="pink" onclick="setTheme('pink')"></button>
     </div>
     
-    <!-- ВАЖНО: Кнопка входа теперь жестко в HTML, её не сможет сломать JS -->
     <div class="profile-area">
-      <button class="login-btn" id="loginBtn" onclick="openModal('login')">Войти</button>
+      <!-- ЖЕСТКАЯ КНОПКА ВХОДА (без JS) -->
+      <button class="login-btn" id="loginBtn" onclick="openAuthModal()">Войти</button>
+      
       <div class="user-info" id="userInfoBtn" style="display:none;">
         <span class="user-name" id="userNameDisplay"></span>
         <div class="avatar" id="userAvatarDisplay"></div>
@@ -237,7 +238,7 @@
   }
   setTheme(localStorage.getItem('pipinka_theme') || 'light');
 
-  // 2. ОТРИСОВКА ИНТЕРФЕЙСА (Только показ/скрытие блоков)
+  // 2. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
   function updateUI() {
     const loginBtn = document.getElementById('loginBtn');
     const userInfoBtn = document.getElementById('userInfoBtn');
@@ -485,17 +486,28 @@
     if (scroll) container.scrollTop = container.scrollHeight;
   }
 
-  // 6. АВТОРИЗАЦИЯ
-  function openModal(mode) {
-    authMode = mode;
+  // 6. АВТОРИЗАЦИЯ (Жестко через onclick)
+  function openAuthModal() {
+    authMode = 'login';
     document.getElementById('authModal').classList.add('on');
-    document.getElementById('authName').style.display = mode === 'register' ? 'block' : 'none';
-    document.getElementById('modalTitle').textContent = mode === 'register' ? 'Регистрация' : 'Вход';
-    document.getElementById('authBtn').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти';
-    document.getElementById('authSwitch').textContent = mode === 'register' ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
+    document.getElementById('authName').style.display = 'none';
+    document.getElementById('modalTitle').textContent = 'Вход';
+    document.getElementById('authBtn').textContent = 'Войти';
+    document.getElementById('authSwitch').textContent = 'Нет аккаунта? Зарегистрироваться';
   }
   
-  function toggleAuthMode() { openModal(authMode === 'login' ? 'register' : 'login'); }
+  function toggleAuthMode() {
+    if (authMode === 'login') {
+      authMode = 'register';
+      document.getElementById('authName').style.display = 'block';
+      document.getElementById('modalTitle').textContent = 'Регистрация';
+      document.getElementById('authBtn').textContent = 'Создать аккаунт';
+      document.getElementById('authSwitch').textContent = 'Уже есть аккаунт? Войти';
+    } else {
+      openAuthModal();
+    }
+  }
+  
   function closeModal() { document.getElementById('authModal').classList.remove('on'); }
 
   async function submitAuth() {
