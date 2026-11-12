@@ -128,7 +128,7 @@
     <div class="video-pane" id="videoPane">
       <div id="player"></div>
       
-      <!-- Панель ввода ссылки (по центру) -->
+      <!-- Панель ввода ссылки -->
       <div class="link-overlay" id="linkOverlay">
         <h3>Что будем смотреть?</h3>
         <input id="urlInp" placeholder="Вставьте ссылку на YouTube..." autocomplete="off">
@@ -138,7 +138,7 @@
         </div>
       </div>
       
-      <!-- Кнопки поверх видео (появляются при активном видео) -->
+      <!-- Кнопки поверх видео -->
       <div class="video-actions" id="videoActions" style="display:none;">
         <button class="action-btn" onclick="showLinkOverlay()">+ Добавить видео</button>
         <button class="action-btn" onclick="playNext()">⏭ Следующее</button>
@@ -153,19 +153,17 @@
         <span class="time" id="timeLbl">0:00 / 0:00</span>
       </div>
       
-      <!-- Нижняя панель с вкладками -->
+      <!-- Нижняя панель -->
       <div class="bottom-panel">
         <div class="tabs">
           <div class="tab active" onclick="switchTab('viewers')">Зрители (<span id="viewerCount">0</span>)</div>
           <div class="tab" onclick="switchTab('queue')">Очередь (<span id="queueCount">0</span>)</div>
         </div>
         
-        <!-- Вкладка Зрители -->
         <div class="tab-content" id="tab-viewers">
           <div class="viewers-list" id="viewersList"></div>
         </div>
         
-        <!-- Вкладка Очередь -->
         <div class="tab-content" id="tab-queue" style="display:none;">
           <div class="queue-list" id="queueList"></div>
         </div>
@@ -186,14 +184,15 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    let player, socket, isRemote = false;
+    let player, socket;
+    // ФЛАГИ ДЛЯ ЗАЩИТЫ ОТ "ЭХА"
+    let isRemoteAction = false; // Флаг: действие пришло от другого пользователя
+    let actionLock = false;     // Блокировка отправки действий во время синхронизации
     let tickTimer = null;
+    
     let currentViewers = [];
     let myAvatar = localStorage.getItem('kinoroom_avatar') || '';
-    
-    // Стейт комнаты
     let queue = []; 
-    let currentVideoId = null;
 
     // 1. Комната
     const urlParams = new URLSearchParams(window.location.search);
@@ -275,7 +274,6 @@
 
     socket.on('room-state', (state) => {
       if (state.videoId) {
-        currentVideoId = state.videoId;
         loadYT(state.videoId);
         hideLinkOverlay();
       } else {
@@ -300,22 +298,40 @@
       updateQueueList();
     });
 
+    // ГЛАВНЫЙ ОБРАБОТЧИК СИНХРОНИЗАЦИИ
     socket.on('video-action', (data) => {
       if (!player) return;
-      isRemote = true;
       
+      // Включаем блокировку, чтобы наши собственные действия не отправлялись обратно
+      actionLock = true;
+      isRemoteAction = true;
+
       if (data.videoId && data.videoId !== player.getVideoData().video_id) {
-        currentVideoId = data.videoId;
         player.loadVideoById(data.videoId);
       }
-      if (data.playing) {
-        player.seekTo(data.time, true);
-        player.playVideo();
-      } else {
-        player.seekTo(data.time, true);
-        player.pauseVideo();
-      }
-      setTimeout(() => isRemote = false, 500);
+      
+      // Немного ждем загрузки, если видео новое
+      setTimeout(() => {
+        const currentTime = player.getCurrentTime();
+        const diff = Math.abs(currentTime - data.time);
+
+        // "Догоняем", если отстаем/опережаем больше чем на 1.5 секунды
+        if (diff > 1.5) {
+          player.seekTo(data.time, true);
+        }
+        
+        if (data.playing && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+          player.playVideo();
+        } else if (!data.playing && player.getPlayerState() === YT.PlayerState.PLAYING) {
+          player.pauseVideo();
+        }
+      }, 300);
+
+      // Снимаем блокировку через секунду
+      setTimeout(() => {
+        isRemoteAction = false;
+        actionLock = false;
+      }, 1000);
     });
 
     socket.on('chat-message', (msg) => {
@@ -398,7 +414,6 @@
       
       if (!id) return alert('Ссылка неверная. Нужна ссылка вида youtube.com/watch?v=...');
       
-      // Пытаемся получить название через oEmbed API (без ключей)
       fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`)
         .then(res => res.json())
         .then(data => {
@@ -407,7 +422,6 @@
           
           if (playNow) {
             socket.emit('play-now', { room: room, videoId: id, title: title });
-            currentVideoId = id;
             if (player) player.loadVideoById(id);
             else loadYT(id);
             hideLinkOverlay();
@@ -419,11 +433,9 @@
           }
         })
         .catch(() => {
-          // Если oembed не сработал, грузим просто по ID
           const name = document.getElementById('nameInp').value.trim() || myName;
           if (playNow) {
              socket.emit('play-now', { room: room, videoId: id, title: null });
-             currentVideoId = id;
              if (player) player.loadVideoById(id); else loadYT(id);
              hideLinkOverlay();
           } else {
@@ -454,7 +466,9 @@
             startTick();
           },
           onStateChange: (e) => {
-            if (isRemote) return;
+            // Если действие пришло от друга, ничего не отправляем обратно!
+            if (isRemoteAction || actionLock) return;
+            
             const time = player.getCurrentTime();
             if (e.data === YT.PlayerState.PAUSED) {
               document.getElementById('playBtn').textContent = 'Смотреть';
@@ -463,7 +477,6 @@
               document.getElementById('playBtn').textContent = 'Пауза';
               socket.emit('video-action', { room: room, playing: true, time: time });
             } else if (e.data === YT.PlayerState.ENDED) {
-              // Автоматически включаем следующее
               socket.emit('video-ended', { room: room });
             }
           }
