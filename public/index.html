@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KinoRoom — Главная</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a; --text:#e8eaf0; --text2:#9aa3b2; --accent:#e8eaf0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+  
+  /* Шапка */
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:15px 30px; border-bottom:1px solid var(--line); background:var(--panel); }
+  .logo { font-size:22px; font-weight:bold; }
+  
+  .profile-area { display: flex; align-items: center; gap: 15px; }
+  .login-btn { padding: 8px 20px; border-radius: 20px; background: var(--accent); color: #111; font-weight: bold; border: none; cursor: pointer; font-size: 15px; }
+  .login-btn:hover { background: white; }
+  
+  .user-info { display: flex; align-items: center; gap: 10px; cursor: pointer; position: relative; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--panel2); border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: bold; background-size: cover; background-position: center; }
+  .user-name { font-size: 15px; font-weight: 500; }
+  
+  /* Контент */
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; width: 100%; flex: 1; }
+  
+  .hero { text-align: center; margin-bottom: 40px; }
+  .hero h1 { font-size: 32px; margin-bottom: 10px; }
+  .hero p { color: var(--text2); font-size: 16px; margin-bottom: 20px; }
+  
+  .create-btn { padding: 12px 30px; border-radius: 8px; background: var(--accent); color: #111; font-weight: bold; border: none; cursor: pointer; font-size: 16px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+  .create-btn:hover { background: white; transform: translateY(-2px); }
+  
+  .section-title { font-size: 20px; margin-bottom: 15px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+  
+  .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+  .room-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.2s; cursor: pointer; }
+  .room-card:hover { border-color: var(--text2); transform: translateY(-2px); }
+  .room-card .room-id { font-family: monospace; font-size: 16px; font-weight: bold; color: var(--accent); }
+  .room-card .room-meta { font-size: 13px; color: var(--text2); display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  
+  .empty-state { text-align: center; padding: 40px; color: var(--text2); font-size: 15px; background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; }
+
+  /* Модальное окно Авторизации */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
+  .modal-overlay.on { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 25px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+  .modal h2 { text-align: center; margin-bottom: 20px; font-size: 22px; }
+  .modal input { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: white; outline: none; font-size: 14px; }
+  .modal .btn { width: 100%; padding: 12px; font-size: 16px; margin-bottom: 10px; background: var(--accent); color: #111; border: none; font-weight: bold; border-radius: 8px; cursor: pointer; }
+  .modal .switch { text-align: center; font-size: 13px; color: var(--text2); cursor: pointer; }
+  .modal .switch:hover { color: white; }
+
+  @media (max-width: 600px) {
+    .topbar { padding: 15px; }
+    .hero h1 { font-size: 24px; }
+    .rooms-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Модальное окно входа -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal">
+      <h2 id="modalTitle">Вход в аккаунт</h2>
+      <input type="email" id="authEmail" placeholder="Email" autocomplete="off">
+      <input type="password" id="authPassword" placeholder="Пароль">
+      <input type="text" id="authName" placeholder="Ваше имя" style="display:none;" autocomplete="off">
+      <button class="btn" onclick="submitAuth()" id="authBtn">Войти</button>
+      <div class="switch" id="authSwitch" onclick="toggleAuthMode()">Нет аккаунта? Зарегистрироваться</div>
+      <div style="text-align:center; margin-top:10px;"><span class="switch" onclick="closeModal()" style="font-size:12px;">Закрыть</span></div>
+    </div>
+  </div>
+
+  <!-- Шапка -->
+  <div class="topbar">
+    <div class="logo">🎬 KinoRoom</div>
+    <div class="profile-area" id="profileArea">
+      <!-- Сюда подставляется либо кнопка, либо профиль -->
+    </div>
+  </div>
+
+  <!-- Контент -->
+  <div class="container">
+    <div class="hero">
+      <h1>Смотрите видео вместе с друзьями</h1>
+      <p>Создайте комнату, скиньте ссылку друзьям и наслаждайтесь синхронизированным просмотром</p>
+      <button class="create-btn" onclick="createRoom()">
+        <span>✨</span> Создать новую комнату
+      </button>
+    </div>
+
+    <div id="myRoomsSection" style="display:none;">
+      <div class="section-title">Мои комнаты</div>
+      <div class="rooms-grid" id="roomsGrid"></div>
+    </div>
+  </div>
+
+<script>
+  let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
+  let authMode = 'login';
+
+  // 1. Обновление интерфейса шапки
+  function updateUI() {
+    const area = document.getElementById('profileArea');
+    const myRoomsSection = document.getElementById('myRoomsSection');
+
+    if (currentUser) {
+      area.innerHTML = `
+        <div class="user-info" onclick="logout()" title="Выйти из аккаунта">
+          <span class="user-name">${currentUser.name}</span>
+          <div class="avatar" style="${currentUser.avatar ? `background-image:url('${currentUser.avatar}')` : ''}">
+            ${currentUser.avatar ? '' : currentUser.name.charAt(0).toUpperCase()}
+          </div>
+        </div>
+      `;
+      myRoomsSection.style.display = 'block';
+      loadMyRooms();
+    } else {
+      area.innerHTML = `<button class="login-btn" onclick="openModal('login')">Войти</button>`;
+      myRoomsSection.style.display = 'none';
+    }
+  }
+
+  // 2. Загрузка комнат пользователя
+  async function loadMyRooms() {
+    if (!currentUser) return;
+    try {
+      const res = await fetch(`/api/my-rooms/${currentUser.id}`);
+      const rooms = await res.json();
+      
+      const grid = document.getElementById('roomsGrid');
+      grid.innerHTML = '';
+
+      if (rooms.length === 0) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">У вас пока нет комнат. Создайте первую!</div>';
+        return;
+      }
+
+      rooms.forEach(roomId => {
+        const div = document.createElement('div');
+        div.className = 'room-card';
+        div.onclick = () => window.location.href = `/room.html?room=${roomId}`;
+        div.innerHTML = `
+          <div class="room-id">${roomId}</div>
+          <div class="room-meta">
+            <span>Нажмите, чтобы войти</span>
+            <span>→</span>
+          </div>
+        `;
+        grid.appendChild(div);
+      });
+    } catch (e) {
+      console.error('Ошибка загрузки комнат', e);
+    }
+  }
+
+  // 3. Создание новой комнаты
+  async function createRoom() {
+    // Генерируем случайный ID
+    const newRoomId = 'room-' + Math.random().toString(36).substring(2, 8);
+    
+    if (currentUser) {
+      // Если залогинен, сохраняем комнату в БД
+      try {
+        await fetch('/api/link-room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id, roomId: newRoomId })
+        });
+      } catch(e) {}
+    }
+    
+    // Переходим в комнату
+    window.location.href = `/room.html?room=${newRoomId}`;
+  }
+
+  // 4. Авторизация (модальное окно)
+  function openModal(mode) {
+    authMode = mode;
+    document.getElementById('authModal').classList.add('on');
+    document.getElementById('authName').style.display = mode === 'register' ? 'block' : 'none';
+    document.getElementById('modalTitle').textContent = mode === 'register' ? 'Регистрация' : 'Вход в аккаунт';
+    document.getElementById('authBtn').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти';
+    document.getElementById('authSwitch').textContent = mode === 'register' ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
+  }
+  
+  function toggleAuthMode() {
+    openModal(authMode === 'login' ? 'register' : 'login');
+  }
+  
+  function closeModal() {
+    document.getElementById('authModal').classList.remove('on');
+  }
+
+  async function submitAuth() {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const name = document.getElementById('authName').value.trim();
+    
+    if (!email || !password) return alert('Заполните email и пароль');
+    if (authMode === 'register' && !name) return alert('Введите ваше имя');
+
+    const url = authMode === 'register' ? '/api/register' : '/api/login';
+    const body = authMode === 'register' ? { email, password, name } : { email, password };
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        currentUser = data.user;
+        localStorage.setItem('kinoroom_user', JSON.stringify(currentUser));
+        closeModal();
+        updateUI();
+      } else {
+        alert(data.error || 'Ошибка');
+      }
+    } catch (err) {
+      alert('Ошибка сети. Проверьте подключение.');
+    }
+  }
+
+  function logout() {
+    if(confirm('Выйти из аккаунта?')) {
+      currentUser = null;
+      localStorage.removeItem('kinoroom_user');
+      updateUI();
+    }
+  }
+
+  // Инициализация
+  updateUI();
+
+  // Слушаем, если пользователь вернулся со страницы комнаты (обновилась история)
+  window.addEventListener('focus', loadMyRooms);
+</script>
+</body>
+</html>
