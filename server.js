@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const { Pool } = require('pg');
 
 const app = express();
 const server = http.createServer(app);
@@ -9,157 +10,226 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const rooms = {};
+// Подключение к базе данных (берем URL из переменных Render)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false } // Обязательно для Render
+});
+
+// При запуске создаем таблицы, если их нет
+async function initDB() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS rooms (
+        id VARCHAR(255) PRIMARY KEY,
+        video_id VARCHAR(255),
+        playing BOOLEAN DEFAULT false,
+        time FLOAT DEFAULT 0,
+        queue JSONB DEFAULT '[]'::jsonb,
+        chat JSONB DEFAULT '[]'::jsonb
+      );
+    `);
+    console.log('База данных готова к работе!');
+  } catch (err) {
+    console.error('Ошибка при инициализации БД:', err);
+  }
+}
+initDB();
+
+// Временный кэш комнат в памяти, чтобы не дергать базу каждую секунду
+const roomsCache = {};
 
 io.on('connection', (socket) => {
-  socket.on('join', (data) => {
-    const room = data.room;
-    socket.join(room);
+  socket.on('join', async (data) => {
+    const roomId = data.room;
+    socket.join(roomId);
     
-    if (!rooms[room]) {
-      rooms[room] = { videoId: null, playing: false, time: 0, chat: [], viewers: [], queue: [] };
+    // Если комнаты нет в кэше, ищем в базе
+    if (!roomsCache[roomId]) {
+      try {
+        const res = await pool.query('SELECT * FROM rooms WHERE id = $1', [roomId]);
+        if (res.rows.length > 0) {
+          roomsCache[roomId] = res.rows[0];
+          // Восстанавливаем зрителей (они не хранятся в БД, только активные)
+          roomsCache[roomId].viewers = [];
+        } else {
+          // Если комнаты нет, создаем новую в базе
+          await pool.query('INSERT INTO rooms (id) VALUES ($1)', [roomId]);
+          roomsCache[roomId] = { id: roomId, video_id: null, playing: false, time: 0, queue: [], chat: [], viewers: [] };
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    let existing = rooms[room].viewers.find(v => v.id === socket.id);
+    // Добавляем зрителя
+    let existing = roomsCache[roomId].viewers.find(v => v.id === socket.id);
     if (!existing) {
-      rooms[room].viewers.push({ id: socket.id, name: data.name, avatar: data.avatar || '' });
+      roomsCache[roomId].viewers.push({ id: socket.id, name: data.name, avatar: data.avatar || '' });
     } else {
       existing.name = data.name;
       existing.avatar = data.avatar || '';
     }
     
-    socket.emit('room-state', rooms[room]);
-    io.to(room).emit('viewers-update', rooms[room].viewers);
+    socket.emit('room-state', {
+      videoId: roomsCache[roomId].video_id,
+      playing: roomsCache[roomId].playing,
+      time: roomsCache[roomId].time,
+      queue: roomsCache[roomId].queue || [],
+      chat: roomsCache[roomId].chat || [],
+      viewers: roomsCache[roomId].viewers
+    });
+    
+    io.to(roomId).emit('viewers-update', roomsCache[roomId].viewers);
   });
 
   socket.on('update-profile', (data) => {
-    const room = data.room;
-    if (rooms[room]) {
-      const viewer = rooms[room].viewers.find(v => v.id === socket.id);
+    const roomId = data.room;
+    if (roomsCache[roomId]) {
+      const viewer = roomsCache[roomId].viewers.find(v => v.id === socket.id);
       if (viewer) {
         viewer.name = data.name;
         viewer.avatar = data.avatar;
       }
-      io.to(room).emit('viewers-update', rooms[room].viewers);
+      io.to(roomId).emit('viewers-update', roomsCache[roomId].viewers);
     }
   });
 
-  // Прямой запуск видео
-  socket.on('play-now', (data) => {
-    const room = data.room;
-    if (rooms[room]) {
-      rooms[room].videoId = data.videoId;
-      rooms[room].playing = true;
-      rooms[room].time = 0;
+  socket.on('play-now', async (data) => {
+    const roomId = data.room;
+    if (roomsCache[roomId]) {
+      roomsCache[roomId].video_id = data.videoId;
+      roomsCache[roomId].playing = true;
+      roomsCache[roomId].time = 0;
       
-      io.to(room).emit('video-action', { videoId: data.videoId, playing: true, time: 0 });
+      io.to(roomId).emit('video-action', { videoId: data.videoId, playing: true, time: 0 });
+      await saveRoomToDB(roomId);
     }
   });
 
-  // Добавление в очередь
-  socket.on('add-to-queue', (data) => {
-    const room = data.room;
-    if (rooms[room]) {
-      rooms[room].queue.push({ videoId: data.videoId, title: data.title, author: data.author, authorId: data.authorId });
+  socket.on('add-to-queue', async (data) => {
+    const roomId = data.room;
+    if (roomsCache[roomId]) {
+      if (!roomsCache[roomId].queue) roomsCache[roomId].queue = [];
+      roomsCache[roomId].queue.push({ videoId: data.videoId, title: data.title, author: data.author, authorId: data.authorId });
       
-      // Если сейчас ничего не играет, включаем сразу
-      if (!rooms[room].videoId) {
-        const next = rooms[room].queue.shift();
-        rooms[room].videoId = next.videoId;
-        rooms[room].playing = true;
-        rooms[room].time = 0;
-        io.to(room).emit('video-action', { videoId: next.videoId, playing: true, time: 0 });
+      if (!roomsCache[roomId].video_id) {
+        const next = roomsCache[roomId].queue.shift();
+        roomsCache[roomId].video_id = next.videoId;
+        roomsCache[roomId].playing = true;
+        roomsCache[roomId].time = 0;
+        io.to(roomId).emit('video-action', { videoId: next.videoId, playing: true, time: 0 });
       }
       
-      io.to(room).emit('queue-update', rooms[room].queue);
+      io.to(roomId).emit('queue-update', roomsCache[roomId].queue);
+      await saveRoomToDB(roomId);
     }
   });
 
-  // Удаление из очереди
-  socket.on('remove-from-queue', (data) => {
-    const room = data.room;
-    if (rooms[room]) {
-      rooms[room].queue.splice(data.index, 1);
-      io.to(room).emit('queue-update', rooms[room].queue);
+  socket.on('remove-from-queue', async (data) => {
+    const roomId = data.room;
+    if (roomsCache[roomId]) {
+      roomsCache[roomId].queue.splice(data.index, 1);
+      io.to(roomId).emit('queue-update', roomsCache[roomId].queue);
+      await saveRoomToDB(roomId);
     }
   });
 
-  // Переключить на следующее (вручную или по окончании)
-  socket.on('play-next', (data) => {
-    const room = data.room;
-    if (rooms[room]) {
-      if (rooms[room].queue.length > 0) {
-        const next = rooms[room].queue.shift();
-        rooms[room].videoId = next.videoId;
-        rooms[room].playing = true;
-        rooms[room].time = 0;
+  socket.on('play-next', async (data) => {
+    const roomId = data.room;
+    if (roomsCache[roomId]) {
+      if (roomsCache[roomId].queue.length > 0) {
+        const next = roomsCache[roomId].queue.shift();
+        roomsCache[roomId].video_id = next.videoId;
+        roomsCache[roomId].playing = true;
+        roomsCache[roomId].time = 0;
         
-        io.to(room).emit('queue-update', rooms[room].queue);
-        io.to(room).emit('video-action', { videoId: next.videoId, playing: true, time: 0 });
+        io.to(roomId).emit('queue-update', roomsCache[roomId].queue);
+        io.to(roomId).emit('video-action', { videoId: next.videoId, playing: true, time: 0 });
       } else {
-        // Очередь пуста, просто останавливаем
-        rooms[room].playing = false;
-        rooms[room].videoId = null;
-        io.to(room).emit('video-action', { videoId: null, playing: false, time: 0 });
-        io.to(room).emit('queue-update', []);
+        roomsCache[roomId].playing = false;
+        roomsCache[roomId].video_id = null;
+        io.to(roomId).emit('video-action', { videoId: null, playing: false, time: 0 });
+        io.to(roomId).emit('queue-update', []);
+      }
+      await saveRoomToDB(roomId);
+    }
+  });
+
+  socket.on('video-ended', async (data) => {
+    const roomId = data.room;
+    if (roomsCache[roomId] && roomsCache[roomId].playing) {
+      roomsCache[roomId].playing = false;
+      if (roomsCache[roomId].queue.length > 0) {
+        const next = roomsCache[roomId].queue.shift();
+        roomsCache[roomId].video_id = next.videoId;
+        roomsCache[roomId].playing = true;
+        roomsCache[roomId].time = 0;
+        io.to(roomId).emit('queue-update', roomsCache[roomId].queue);
+        io.to(roomId).emit('video-action', { videoId: next.videoId, playing: true, time: 0 });
+      } else {
+        roomsCache[roomId].video_id = null;
+        io.to(roomId).emit('video-action', { videoId: null, playing: false, time: 0 });
+      }
+      await saveRoomToDB(roomId);
+    }
+  });
+
+  socket.on('video-action', async (data) => {
+    const roomId = data.room;
+    if (roomsCache[roomId]) {
+      roomsCache[roomId].playing = data.playing;
+      roomsCache[roomId].time = data.time;
+      if (data.videoId) roomsCache[roomId].video_id = data.videoId;
+      socket.to(roomId).emit('video-action', data);
+      
+      // Сохраняем состояние в БД (не чаще раза в 5 секунд)
+      if (!roomsCache[roomId].lastSave || Date.now() - roomsCache[roomId].lastSave > 5000) {
+        roomsCache[roomId].lastSave = Date.now();
+        await saveRoomToDB(roomId);
       }
     }
   });
 
-  // Когда видео закончилось у одного из клиентов
-  socket.on('video-ended', (data) => {
-    const room = data.room;
-    if (rooms[room]) {
-      // Защита от одновременных срабатываний (проверяем, что видео еще актуально)
-      if (rooms[room].playing) {
-        rooms[room].playing = false; // Блокируем повторные вызовы
-        setTimeout(() => {
-          if (rooms[room]) {
-            if (rooms[room].queue.length > 0) {
-              const next = rooms[room].queue.shift();
-              rooms[room].videoId = next.videoId;
-              rooms[room].playing = true;
-              rooms[room].time = 0;
-              io.to(room).emit('queue-update', rooms[room].queue);
-              io.to(room).emit('video-action', { videoId: next.videoId, playing: true, time: 0 });
-            } else {
-              rooms[room].videoId = null;
-              rooms[room].playing = false;
-              io.to(room).emit('video-action', { videoId: null, playing: false, time: 0 });
-            }
-          }
-        }, 1000); // небольшая задержка, чтобы избежать спама
+  socket.on('chat-message', async (data) => {
+    const roomId = data.room;
+    if (roomsCache[roomId]) {
+      if (!roomsCache[roomId].chat) roomsCache[roomId].chat = [];
+      roomsCache[roomId].chat.push({ name: data.name, text: data.text, avatar: data.avatar });
+      
+      // Ограничиваем историю чата последними 100 сообщениями
+      if (roomsCache[roomId].chat.length > 100) {
+        roomsCache[roomId].chat.shift();
       }
-    }
-  });
-
-  socket.on('video-action', (data) => {
-    const room = data.room;
-    if (rooms[room]) {
-      rooms[room].playing = data.playing;
-      rooms[room].time = data.time;
-      if (data.videoId) rooms[room].videoId = data.videoId;
-      socket.to(room).emit('video-action', data);
-    }
-  });
-
-  socket.on('chat-message', (data) => {
-    const room = data.room;
-    if (rooms[room]) {
-      rooms[room].chat.push(data);
-      io.to(room).emit('chat-message', data);
+      
+      io.to(roomId).emit('chat-message', data);
+      await saveRoomToDB(roomId);
     }
   });
 
   socket.on('disconnecting', () => {
-    for (const room of socket.rooms) {
-      if (rooms[room]) {
-        rooms[room].viewers = rooms[room].viewers.filter(v => v.id !== socket.id);
-        io.to(room).emit('viewers-update', rooms[room].viewers);
+    for (const roomId of socket.rooms) {
+      if (roomsCache[roomId]) {
+        roomsCache[roomId].viewers = roomsCache[roomId].viewers.filter(v => v.id !== socket.id);
+        io.to(roomId).emit('viewers-update', roomsCache[roomId].viewers);
       }
     }
   });
 });
+
+// Функция сохранения состояния комнаты в БД
+async function saveRoomToDB(roomId) {
+  const room = roomsCache[roomId];
+  if (!room) return;
+  try {
+    await pool.query(
+      'UPDATE rooms SET video_id = $1, playing = $2, time = $3, queue = $4, chat = $5 WHERE id = $6',
+      [room.video_id, room.playing, room.time, JSON.stringify(room.queue || []), JSON.stringify(room.chat || []), roomId]
+    );
+  } catch (err) {
+    console.error('Ошибка сохранения в БД:', err);
+  }
+}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
