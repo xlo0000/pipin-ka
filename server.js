@@ -3,24 +3,24 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { Pool } = require('pg');
-const crypto = require('crypto'); // Для хеширования паролей
+const crypto = require('crypto');
 
 const app = express();
-app.use(express.json()); // Чтобы сервер понимал JSON-запросы (для регистрации)
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Подключение к базе данных
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-// Создаем таблицы
+// Инициализация таблиц
 async function initDB() {
   try {
-    // Таблица комнат
     await pool.query(`
       CREATE TABLE IF NOT EXISTS rooms (
         id VARCHAR(255) PRIMARY KEY,
@@ -32,7 +32,6 @@ async function initDB() {
       );
     `);
 
-    // Таблица пользователей
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -44,7 +43,6 @@ async function initDB() {
       );
     `);
 
-    // Таблица связи пользователя и комнаты (чтобы в личном кабинете показывать "Мои комнаты")
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_rooms (
         user_id INTEGER REFERENCES users(id),
@@ -54,7 +52,7 @@ async function initDB() {
       );
     `);
 
-    console.log('База данных готова (Комнаты + Пользователи)!');
+    console.log('База данных готова!');
   } catch (err) {
     console.error('Ошибка при инициализации БД:', err);
   }
@@ -63,24 +61,23 @@ initDB();
 
 const roomsCache = {};
 
-// --- API ДЛЯ РЕГИСТРАЦИИ И ВХОДА ---
+// ==========================================
+// API ДЛЯ АККАУНТОВ И КОМНАТ
+// ==========================================
 
-// Регистрация
+// 1. Регистрация
 app.post('/api/register', async (req, res) => {
   const { email, password, name } = req.body;
   if (!email || !password || !name) return res.status(400).json({ error: 'Заполните все поля' });
 
   try {
-    // Проверяем, есть ли такой email
     const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     if (userExists.rows.length > 0) return res.status(400).json({ error: 'Этот email уже занят' });
 
-    // Хешируем пароль (чтобы даже мы не знали, какой он)
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
     const passwordHash = `${salt}:${hash}`;
 
-    // Создаем пользователя
     const newUser = await pool.query(
       'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name, avatar',
       [email, passwordHash, name]
@@ -93,7 +90,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Вход
+// 2. Вход
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Заполните все поля' });
@@ -108,7 +105,6 @@ app.post('/api/login', async (req, res) => {
 
     if (hash !== originalHash) return res.status(400).json({ error: 'Неверный email или пароль' });
 
-    // Убираем хеш из ответа
     delete user.password_hash;
     res.json({ success: true, user });
   } catch (err) {
@@ -117,7 +113,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Получить комнаты пользователя
+// 3. Получить комнаты пользователя
 app.get('/api/my-rooms/:userId', async (req, res) => {
   try {
     const result = await pool.query('SELECT room_id FROM user_rooms WHERE user_id = $1 ORDER BY created_at DESC', [req.params.userId]);
@@ -127,7 +123,7 @@ app.get('/api/my-rooms/:userId', async (req, res) => {
   }
 });
 
-// Привязать комнату к пользователю
+// 4. Привязать комнату к пользователю
 app.post('/api/link-room', async (req, res) => {
   const { userId, roomId } = req.body;
   try {
@@ -138,8 +134,23 @@ app.post('/api/link-room', async (req, res) => {
   }
 });
 
+// 5. Удалить комнату из списка пользователя
+app.post('/api/delete-room', async (req, res) => {
+  const { userId, roomId } = req.body;
+  try {
+    await pool.query('DELETE FROM user_rooms WHERE user_id = $1 AND room_id = $2', [userId, roomId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
 
-// --- ЛОГИКА SOCKET.IO (Осталась без изменений) ---
+
+// ==========================================
+// ЛОГИКА SOCKET.IO (ВИДЕО, ЧАТ, ЗРИТЕЛИ)
+// ==========================================
+
 io.on('connection', (socket) => {
   socket.on('join', async (data) => {
     const roomId = data.room;
@@ -178,7 +189,6 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('viewers-update', roomsCache[roomId].viewers);
   });
 
-  // ... (остальные обработчики socket, такие как update-profile, play-now, add-to-queue и т.д., оставляем без изменений)
   socket.on('update-profile', (data) => {
     const roomId = data.room;
     if (roomsCache[roomId]) {
