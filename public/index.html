@@ -9,6 +9,16 @@
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
   
+  /* Модальное окно (Авторизация) */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
+  .modal-overlay.on { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 25px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+  .modal h2 { text-align: center; margin-bottom: 20px; font-size: 22px; }
+  .modal input { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: white; outline: none; font-size: 14px; }
+  .modal .btn { width: 100%; padding: 12px; font-size: 16px; margin-bottom: 10px; }
+  .modal .switch { text-align: center; font-size: 13px; color: var(--text2); cursor: pointer; }
+  .modal .switch:hover { color: white; }
+
   /* Шапка */
   .topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 18px; border-bottom:1px solid var(--line); background:var(--panel); }
   .logo-area { display:flex; align-items:center; gap:12px; }
@@ -17,7 +27,9 @@
   .roomcode:hover { border-color: var(--text2); color: var(--text); background: var(--line); }
   
   /* Профиль */
-  .profile-area { position: relative; }
+  .profile-area { position: relative; display: flex; align-items: center; gap: 10px; }
+  .login-btn { padding: 8px 16px; border-radius: 20px; background: var(--accent); color: #111; font-weight: bold; border: none; cursor: pointer; font-size: 14px; }
+  .login-btn:hover { background: white; }
   .my-avatar-btn { width:36px; height:36px; border-radius:50%; background:var(--panel2); border:2px solid var(--line); cursor:pointer; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; background-size:cover; background-position:center; overflow:hidden; transition:0.2s; }
   .my-avatar-btn:hover { border-color: var(--text2); }
   .profile-menu { display:none; position:absolute; top:45px; right:0; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:15px; width:250px; z-index:100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); flex-direction:column; gap:12px; }
@@ -103,6 +115,19 @@
 </head>
 <body>
   
+  <!-- МОДАЛЬНОЕ ОКНО ВХОДА/РЕГИСТРАЦИИ -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal">
+      <h2 id="modalTitle">Вход в аккаунт</h2>
+      <input type="email" id="authEmail" placeholder="Email" autocomplete="off">
+      <input type="password" id="authPassword" placeholder="Пароль">
+      <input type="text" id="authName" placeholder="Ваше имя" style="display:none;" autocomplete="off">
+      <button class="btn primary" onclick="submitAuth()" id="authBtn">Войти</button>
+      <div class="switch" id="authSwitch" onclick="toggleAuthMode()">Нет аккаунта? Зарегистрироваться</div>
+      <div style="text-align:center; margin-top:10px;"><span class="switch" onclick="closeModal()" style="font-size:12px;">Закрыть</span></div>
+    </div>
+  </div>
+
   <!-- Шапка -->
   <div class="topbar">
     <div class="logo-area">
@@ -113,13 +138,19 @@
     </div>
     
     <div class="profile-area">
-      <div class="my-avatar-btn" id="myAvatarBtn" title="Мой профиль">Я</div>
+      <!-- Кнопка Войти (видна, если не авторизован) -->
+      <button class="login-btn" id="loginTopBtn" onclick="openModal('login')">Войти</button>
+
+      <!-- Аватарка (видна, если авторизован) -->
+      <div class="my-avatar-btn" id="myAvatarBtn" title="Мой профиль" style="display:none;">Я</div>
+      
       <div class="profile-menu" id="profileMenu">
         <div>
           <label>Моё имя</label>
           <input id="nameInp" placeholder="Имя" autocomplete="off">
         </div>
         <button class="btn" id="uploadPhotoBtn">Загрузить фото профиля</button>
+        <button class="btn" onclick="logout()" style="background:transparent; border-color:var(--line); color:#e5534b; margin-top:5px;">Выйти</button>
       </div>
     </div>
   </div>
@@ -128,7 +159,6 @@
     <div class="video-pane" id="videoPane">
       <div id="player"></div>
       
-      <!-- Панель ввода ссылки -->
       <div class="link-overlay" id="linkOverlay">
         <h3>Что будем смотреть?</h3>
         <input id="urlInp" placeholder="Вставьте ссылку на YouTube..." autocomplete="off">
@@ -138,7 +168,6 @@
         </div>
       </div>
       
-      <!-- Кнопки поверх видео -->
       <div class="video-actions" id="videoActions" style="display:none;">
         <button class="action-btn" onclick="showLinkOverlay()">+ Добавить видео</button>
         <button class="action-btn" onclick="playNext()">⏭ Следующее</button>
@@ -153,7 +182,6 @@
         <span class="time" id="timeLbl">0:00 / 0:00</span>
       </div>
       
-      <!-- Нижняя панель -->
       <div class="bottom-panel">
         <div class="tabs">
           <div class="tab active" onclick="switchTab('viewers')">Зрители (<span id="viewerCount">0</span>)</div>
@@ -185,14 +213,16 @@
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     let player, socket;
-    // ФЛАГИ ДЛЯ ЗАЩИТЫ ОТ "ЭХА"
-    let isRemoteAction = false; // Флаг: действие пришло от другого пользователя
-    let actionLock = false;     // Блокировка отправки действий во время синхронизации
+    let isRemoteAction = false;
+    let actionLock = false;     
     let tickTimer = null;
-    
     let currentViewers = [];
     let myAvatar = localStorage.getItem('kinoroom_avatar') || '';
     let queue = []; 
+    
+    // Переменные аккаунта
+    let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
+    let authMode = 'login'; // 'login' или 'register'
 
     // 1. Комната
     const urlParams = new URLSearchParams(window.location.search);
@@ -206,355 +236,34 @@
       });
     };
 
-    // 2. Профиль
-    let myName = localStorage.getItem('kinoroom_name') || 'Гость-' + Math.floor(Math.random() * 100);
-    document.getElementById('nameInp').value = myName;
+    // 2. Логика аккаунта
+    function updateAuthUI() {
+      const loginBtn = document.getElementById('loginTopBtn');
+      const avatarBtn = document.getElementById('myAvatarBtn');
 
-    const profileMenu = document.getElementById('profileMenu');
-    document.getElementById('myAvatarBtn').onclick = (e) => {
-      e.stopPropagation();
-      profileMenu.classList.toggle('on');
-    };
-    document.addEventListener('click', () => profileMenu.classList.remove('on'));
-    profileMenu.addEventListener('click', (e) => e.stopPropagation());
-
-    document.getElementById('nameInp').addEventListener('input', (e) => {
-      let newName = e.target.value.trim();
-      if (!newName) return;
-      localStorage.setItem('kinoroom_name', newName);
-      updateMyButton();
-      socket.emit('update-profile', { room: room, name: newName, avatar: myAvatar });
-    });
-
-    document.getElementById('uploadPhotoBtn').onclick = () => document.getElementById('avatarInput').click();
-    document.getElementById('avatarInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          canvas.width = 100; canvas.height = 100;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, 100, 100);
-          myAvatar = canvas.toDataURL('image/jpeg', 0.8);
-          
+      if (currentUser) {
+        loginBtn.style.display = 'none';
+        avatarBtn.style.display = 'flex';
+        
+        // Если есть аккаунт, берем имя и аватар оттуда
+        document.getElementById('nameInp').value = currentUser.name;
+        if (currentUser.avatar) {
+          myAvatar = currentUser.avatar;
           localStorage.setItem('kinoroom_avatar', myAvatar);
-          updateMyButton();
-          socket.emit('update-profile', { room: room, name: document.getElementById('nameInp').value, avatar: myAvatar });
-        };
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    function updateMyButton() {
-      const btn = document.getElementById('myAvatarBtn');
-      if (myAvatar) {
-        btn.style.backgroundImage = `url('${myAvatar}')`;
-        btn.textContent = '';
-      } else {
-        btn.style.backgroundImage = 'none';
-        btn.textContent = (document.getElementById('nameInp').value.charAt(0) || '?').toUpperCase();
-      }
-    }
-    updateMyButton();
-
-    const colors = ['#4c8dff', '#e5534b', '#57ab5a', '#ff9800', '#9c27b0', '#00bcd4', '#e91e63'];
-    function getColor(name) {
-      let hash = 0;
-      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-      return colors[Math.abs(hash) % colors.length];
-    }
-
-    // --- Socket ---
-    socket = io();
-    socket.emit('join', { room: room, name: myName, avatar: myAvatar });
-
-    socket.on('room-state', (state) => {
-      if (state.videoId) {
-        loadYT(state.videoId);
-        hideLinkOverlay();
-      } else {
-        showLinkOverlay();
-      }
-      
-      state.chat.forEach(msg => addMsg(msg.name, msg.text, msg.avatar));
-      currentViewers = state.viewers || [];
-      queue = state.queue || [];
-      
-      updateViewersList();
-      updateQueueList();
-    });
-
-    socket.on('viewers-update', (viewers) => {
-      currentViewers = viewers;
-      updateViewersList();
-    });
-
-    socket.on('queue-update', (newQueue) => {
-      queue = newQueue;
-      updateQueueList();
-    });
-
-    // ГЛАВНЫЙ ОБРАБОТЧИК СИНХРОНИЗАЦИИ
-    socket.on('video-action', (data) => {
-      if (!player) return;
-      
-      // Включаем блокировку, чтобы наши собственные действия не отправлялись обратно
-      actionLock = true;
-      isRemoteAction = true;
-
-      if (data.videoId && data.videoId !== player.getVideoData().video_id) {
-        player.loadVideoById(data.videoId);
-      }
-      
-      // Немного ждем загрузки, если видео новое
-      setTimeout(() => {
-        const currentTime = player.getCurrentTime();
-        const diff = Math.abs(currentTime - data.time);
-
-        // "Догоняем", если отстаем/опережаем больше чем на 1.5 секунды
-        if (diff > 1.5) {
-          player.seekTo(data.time, true);
         }
-        
-        if (data.playing && player.getPlayerState() !== YT.PlayerState.PLAYING) {
-          player.playVideo();
-        } else if (!data.playing && player.getPlayerState() === YT.PlayerState.PLAYING) {
-          player.pauseVideo();
-        }
-      }, 300);
-
-      // Снимаем блокировку через секунду
-      setTimeout(() => {
-        isRemoteAction = false;
-        actionLock = false;
-      }, 1000);
-    });
-
-    socket.on('chat-message', (msg) => {
-      addMsg(msg.name, msg.text, msg.avatar);
-    });
-
-    // --- UI Обновления ---
-    function updateViewersList() {
-      const list = document.getElementById('viewersList');
-      list.innerHTML = '';
-      document.getElementById('viewerCount').textContent = currentViewers.length;
-      
-      const myCurrentName = document.getElementById('nameInp').value.trim() || myName;
-      currentViewers.forEach(v => {
-        if (v.id === socket.id) { v.name = myCurrentName; v.avatar = myAvatar; }
-        
-        const div = document.createElement('div');
-        div.className = 'viewer';
-        let bgStyle = v.avatar ? `background-image: url('${v.avatar}')` : `background:${getColor(v.name)}`;
-        let content = v.avatar ? '' : (v.name.charAt(0) || '?');
-        div.innerHTML = `<div class="avatar" style="${bgStyle}">${content}</div><span>${v.name}</span>`;
-        list.appendChild(div);
-      });
-    }
-
-    function updateQueueList() {
-      const list = document.getElementById('queueList');
-      list.innerHTML = '';
-      document.getElementById('queueCount').textContent = queue.length;
-
-      if (queue.length === 0) {
-        list.innerHTML = '<div class="queue-empty">Очередь пуста. Добавьте видео!</div>';
-        return;
-      }
-
-      queue.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'queue-item';
-        div.innerHTML = `
-          <div class="queue-info">
-            <span class="queue-title">${index + 1}. ${item.title || 'Видео YouTube'}</span>
-            <span class="queue-author">Добавил: ${item.author}</span>
-          </div>
-          ${item.authorId === socket.id ? '<button class="del-btn" onclick="removeFromQueue(' + index + ')" title="Удалить">✕</button>' : ''}
-        `;
-        list.appendChild(div);
-      });
-    }
-
-    // --- Табы ---
-    function switchTab(name) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-      
-      if (name === 'viewers') {
-        document.querySelectorAll('.tab')[0].classList.add('active');
-        document.getElementById('tab-viewers').style.display = 'block';
+        updateMyButton();
       } else {
-        document.querySelectorAll('.tab')[1].classList.add('active');
-        document.getElementById('tab-queue').style.display = 'block';
+        loginBtn.style.display = 'block';
+        avatarBtn.style.display = 'none';
+        updateMyButton();
       }
     }
+    updateAuthUI();
 
-    // --- Видео и Очередь ---
-    function showLinkOverlay() {
-      document.getElementById('linkOverlay').classList.remove('hidden');
-    }
-    function hideLinkOverlay() {
-      document.getElementById('linkOverlay').classList.add('hidden');
-      document.getElementById('videoActions').style.display = 'flex';
-    }
-
-    function loadVideo(playNow) {
-      const url = document.getElementById('urlInp').value;
-      let id = null;
-      try {
-        const u = new URL(url);
-        id = u.searchParams.get('v') || (u.hostname.includes('youtu.be') ? u.pathname.slice(1) : null);
-      } catch(e) {}
-      
-      if (!id) return alert('Ссылка неверная. Нужна ссылка вида youtube.com/watch?v=...');
-      
-      fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`)
-        .then(res => res.json())
-        .then(data => {
-          const title = data.title;
-          const name = document.getElementById('nameInp').value.trim() || myName;
-          
-          if (playNow) {
-            socket.emit('play-now', { room: room, videoId: id, title: title });
-            if (player) player.loadVideoById(id);
-            else loadYT(id);
-            hideLinkOverlay();
-          } else {
-            socket.emit('add-to-queue', { room: room, videoId: id, title: title, author: name, authorId: socket.id });
-            document.getElementById('urlInp').value = '';
-            alert('Видео добавлено в очередь!');
-            switchTab('queue');
-          }
-        })
-        .catch(() => {
-          const name = document.getElementById('nameInp').value.trim() || myName;
-          if (playNow) {
-             socket.emit('play-now', { room: room, videoId: id, title: null });
-             if (player) player.loadVideoById(id); else loadYT(id);
-             hideLinkOverlay();
-          } else {
-             socket.emit('add-to-queue', { room: room, videoId: id, title: null, author: name, authorId: socket.id });
-             switchTab('queue');
-          }
-        });
-    }
-
-    function removeFromQueue(index) {
-      socket.emit('remove-from-queue', { room: room, index: index });
-    }
-
-    function playNext() {
-      socket.emit('play-next', { room: room });
-    }
-
-    function loadYT(videoId) {
-      if (player) { player.loadVideoById(videoId); return; }
-      player = new YT.Player('player', {
-        videoId: videoId,
-        playerVars: { rel: 0, origin: window.location.origin },
-        events: {
-          onReady: () => {
-            document.getElementById('playBtn').disabled = false;
-            document.getElementById('fsBtn').style.display = 'block';
-            document.getElementById('player').style.pointerEvents = 'none'; 
-            startTick();
-          },
-          onStateChange: (e) => {
-            // Если действие пришло от друга, ничего не отправляем обратно!
-            if (isRemoteAction || actionLock) return;
-            
-            const time = player.getCurrentTime();
-            if (e.data === YT.PlayerState.PAUSED) {
-              document.getElementById('playBtn').textContent = 'Смотреть';
-              socket.emit('video-action', { room: room, playing: false, time: time });
-            } else if (e.data === YT.PlayerState.PLAYING) {
-              document.getElementById('playBtn').textContent = 'Пауза';
-              socket.emit('video-action', { room: room, playing: true, time: time });
-            } else if (e.data === YT.PlayerState.ENDED) {
-              socket.emit('video-ended', { room: room });
-            }
-          }
-        }
-      });
-    }
-
-    document.getElementById('playBtn').onclick = () => {
-      if (!player) return;
-      const st = player.getPlayerState();
-      const time = player.getCurrentTime();
-      if (st === YT.PlayerState.PLAYING) {
-        player.pauseVideo();
-        socket.emit('video-action', { room: room, playing: false, time: time });
-      } else {
-        player.playVideo();
-        socket.emit('video-action', { room: room, playing: true, time: time });
-      }
-    };
-
-    document.getElementById('progress').onclick = function(e) {
-      if (!player) return;
-      const dur = player.getDuration();
-      if (!dur) return;
-      const r = this.getBoundingClientRect();
-      const ratio = (e.clientX - r.left) / r.width;
-      const newTime = dur * ratio;
-      player.seekTo(newTime, true);
-      socket.emit('video-action', { room: room, playing: player.getPlayerState() === YT.PlayerState.PLAYING, time: newTime });
-    };
-
-    function startTick() {
-      if(tickTimer) clearInterval(tickTimer);
-      tickTimer = setInterval(() => {
-        if (!player || typeof player.getCurrentTime !== 'function') return;
-        const cur = player.getCurrentTime() || 0;
-        const dur = player.getDuration() || 0;
-        if (dur > 0) {
-          document.getElementById('fill').style.width = (cur / dur * 100) + '%';
-          document.getElementById('timeLbl').textContent = fmt(cur) + ' / ' + fmt(dur);
-        }
-      }, 250);
-    }
-
-    function fmt(s) { s = Math.max(0, Math.floor(s)); const m = Math.floor(s/60), ss = s%60; return m + ':' + (ss<10?'0':'') + ss; }
-
-    document.getElementById('fsBtn').onclick = () => {
-      const videoPane = document.getElementById('videoPane');
-      if (!document.fullscreenElement) {
-        if (videoPane.requestFullscreen) videoPane.requestFullscreen();
-        else if (videoPane.webkitRequestFullscreen) videoPane.webkitRequestFullscreen();
-      } else {
-        if (document.exitFullscreen) document.exitFullscreen();
-      }
-    };
-
-    // --- Чат ---
-    function sendMsg() {
-      const inp = document.getElementById('inp');
-      if (!inp.value.trim()) return;
-      const name = document.getElementById('nameInp').value.trim() || myName;
-      socket.emit('chat-message', { room: room, name: name, text: inp.value, avatar: myAvatar });
-      inp.value = '';
-    }
-
-    function addMsg(name, text, avatar) {
-      const div = document.createElement('div');
-      div.className = 'msg';
-      let bgStyle = avatar ? `background-image: url('${avatar}')` : `background:${getColor(name)}`;
-      let content = avatar ? '' : (name.charAt(0) || '?');
-      div.innerHTML = `<span class="author"><span class="avatar-mini" style="${bgStyle}">${content}</span>${name}</span><span>${text}</span>`;
-      document.getElementById('msgs').appendChild(div);
-      document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
-    }
-
-    document.getElementById('inp').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') sendMsg();
-    });
-  </script>
-</body>
-</html>
+    function openModal(mode) {
+      authMode = mode;
+      document.getElementById('authModal').classList.add('on');
+      document.getElementById('authName').style.display = mode === 'register' ? 'block' : 'none';
+      document.getElementById('modalTitle').textContent = mode === 'register' ? 'Регистрация' : 'Вход в аккаунт';
+      document.getElementById('authBtn').textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти';
+      document.getElementById('auth
