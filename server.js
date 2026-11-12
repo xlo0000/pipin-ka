@@ -18,14 +18,27 @@ io.on('connection', (socket) => {
     socket.join(room);
     
     if (!rooms[room]) {
-      rooms[room] = { videoId: null, playing: false, time: 0, chat: [] };
+      rooms[room] = { videoId: null, playing: false, time: 0, chat: [], viewers: [] };
     }
 
+    // Добавляем зрителя
+    rooms[room].viewers.push({ id: socket.id, name: data.name });
+    
     // Отправляем новому участнику текущее состояние комнаты
     socket.emit('room-state', rooms[room]);
     
-    // Сообщаем всем, что кто-то зашел
-    io.to(room).emit('user-joined', data.name);
+    // Обновляем список зрителей у всех
+    io.to(room).emit('viewers-update', rooms[room].viewers);
+  });
+
+  // Обновление имени (когда пользователь меняет его в профиле)
+  socket.on('update-name', (data) => {
+    const room = data.room;
+    if (rooms[room]) {
+      const viewer = rooms[room].viewers.find(v => v.id === socket.id);
+      if (viewer) viewer.name = data.name;
+      io.to(room).emit('viewers-update', rooms[room].viewers);
+    }
   });
 
   socket.on('video-action', (data) => {
@@ -34,7 +47,6 @@ io.on('connection', (socket) => {
       rooms[room].playing = data.playing;
       rooms[room].time = data.time;
       if (data.videoId) rooms[room].videoId = data.videoId;
-      // Пересылаем действие всем остальным
       socket.to(room).emit('video-action', data);
     }
   });
@@ -43,8 +55,17 @@ io.on('connection', (socket) => {
     const room = data.room;
     if (rooms[room]) {
       rooms[room].chat.push(data);
-      // Пересылаем сообщение всем в комнате
       io.to(room).emit('chat-message', data);
+    }
+  });
+
+  // Удаление зрителя, когда он закрывает вкладку
+  socket.on('disconnecting', () => {
+    for (const room of socket.rooms) {
+      if (rooms[room]) {
+        rooms[room].viewers = rooms[room].viewers.filter(v => v.id !== socket.id);
+        io.to(room).emit('viewers-update', rooms[room].viewers);
+      }
     }
   });
 });
