@@ -3,126 +3,141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KinoRoom — Комната</title>
+<title>pipin'ka — Комната</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a; --text:#e8eaf0; --text2:#9aa3b2; --accent:#e8eaf0; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  /* Базовые переменные */
+  :root {
+    --bg: #f8f9fa; --surface: #ffffff; --surface-hover: #f1f3f5; --border: #e9ecef;
+    --text: #212529; --text-muted: #868e96; --accent: #adb5bd; --accent-hover: #868e96; --accent-text: #ffffff;
+  }
+  
+  /* Темы (дублируются с главной) */
+  [data-theme="light"] { --bg: #f8f9fa; --surface: #ffffff; --surface-hover: #f1f3f5; --border: #e9ecef; --text: #212529; --text-muted: #868e96; --accent: #adb5bd; --accent-hover: #868e96; --accent-text: #ffffff; }
+  [data-theme="dark"] { --bg: #121212; --surface: #1e1e1e; --surface-hover: #2c2c2c; --border: #333333; --text: #f8f9fa; --text-muted: #adb5bd; --accent: #495057; --accent-hover: #6c757d; --accent-text: #ffffff; }
+  [data-theme="blue"] { --bg: #e7f5ff; --surface: #ffffff; --surface-hover: #d0ebff; --border: #a5d8ff; --text: #1864ab; --text-muted: #4dabf7; --accent: #74c0fc; --accent-hover: #4dabf7; --accent-text: #0b4f8a; }
+  [data-theme="mint"] { --bg: #e6fcf5; --surface: #ffffff; --surface-hover: #c3fae8; --border: #96f2d7; --text: #087f5b; --text-muted: #20c997; --accent: #63e6be; --accent-hover: #38d9a9; --accent-text: #064e3b; }
+  [data-theme="pink"] { --bg: #fff0f6; --surface: #ffffff; --surface-hover: #ffdeeb; --border: #fcc2d7; --text: #a61e4d; --text-muted: #f06595; --accent: #faa2c1; --accent-hover: #f06595; --accent-text: #6b0f31; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+  body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: background 0.3s, color 0.3s; }
   
   /* Шапка */
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 18px; border-bottom:1px solid var(--line); background:var(--panel); }
-  .logo-area { display:flex; align-items:center; gap:12px; }
-  .logo-area strong { font-size:18px; }
-  .roomcode { font-family:monospace; font-size:13px; padding:6px 12px; border:1px solid var(--line); border-radius:20px; background:var(--panel2); cursor:pointer; transition: 0.2s; color: var(--text2); display:flex; align-items:center; gap:6px;}
-  .roomcode:hover { border-color: var(--text2); color: var(--text); background: var(--line); }
-  .home-btn { padding: 6px 12px; border-radius: 6px; background: transparent; color: var(--text); border: 1px solid var(--line); cursor: pointer; font-size: 13px; transition: 0.2s; }
-  .home-btn:hover { background: var(--panel2); }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-bottom: 1px solid var(--border); background: var(--surface); z-index: 20; transition: 0.3s; }
+  .logo-area { display: flex; align-items: center; gap: 16px; }
+  .home-btn { padding: 8px 16px; border-radius: 8px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); cursor: pointer; font-size: 14px; font-weight: 500; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+  .home-btn:hover { background: var(--surface-hover); color: var(--text); }
+  .roomcode { font-family: monospace; font-size: 14px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); cursor: pointer; transition: 0.2s; color: var(--text-muted); display: flex; align-items: center; gap: 8px; font-weight: 500; }
+  .roomcode:hover { border-color: var(--accent); color: var(--text); }
   
   /* Профиль */
   .profile-area { position: relative; display: flex; align-items: center; gap: 10px; }
-  .my-avatar-btn { width:36px; height:36px; border-radius:50%; background:var(--panel2); border:2px solid var(--line); cursor:pointer; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; background-size:cover; background-position:center; overflow:hidden; transition:0.2s; }
-  .my-avatar-btn:hover { border-color: var(--text2); }
-  .profile-menu { display:none; position:absolute; top:45px; right:0; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:15px; width:250px; z-index:100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); flex-direction:column; gap:12px; }
-  .profile-menu.on { display:flex; }
-  .profile-menu label { font-size:12px; color:var(--text2); margin-bottom:4px; display:block; }
-  .profile-menu input { width:100%; padding:8px 12px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:white; outline:none; font-size:14px;}
-  .profile-menu .btn { width:100%; margin-top:5px; }
+  .my-avatar-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-hover); border: 2px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); font-weight: 700; background-size: cover; background-position: center; overflow: hidden; transition: 0.2s; font-size: 16px; }
+  .my-avatar-btn:hover { border-color: var(--accent); }
+  .profile-menu { display: none; position: absolute; top: 50px; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; width: 260px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.1); flex-direction: column; gap: 12px; }
+  .profile-menu.on { display: flex; }
+  .profile-menu label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; display: block; font-weight: 500; }
+  .profile-menu input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; font-size: 14px; }
+  .profile-menu .btn { width: 100%; margin-top: 8px; padding: 10px; background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 500; transition: 0.2s; }
+  .profile-menu .btn:hover { border-color: var(--text-muted); }
 
   /* Основная область */
-  .body { flex:1; display:flex; min-height:0; }
-  .video-pane { flex:2; display:flex; flex-direction:column; border-right:1px solid var(--line); background:#000; position: relative; }
-  #player { width:100%; flex:1; }
+  .body { flex: 1; display: flex; min-height: 0; }
+  .video-pane { flex: 2; display: flex; flex-direction: column; border-right: 1px solid var(--border); background: #000; position: relative; }
+  #player { width: 100%; flex: 1; pointer-events: auto; }
   
-  /* Плавающая панель ввода ссылки */
-  .link-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(23, 26, 33, 0.95); padding: 20px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; width: 90%; max-width: 500px; border: 1px solid var(--line); backdrop-filter: blur(5px); z-index: 10; transition: opacity 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+  /* Оверлей ссылки */
+  .link-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 255, 255, 0.9); padding: 30px; border-radius: 20px; display: flex; flex-direction: column; gap: 20px; width: 90%; max-width: 550px; border: 1px solid var(--border); backdrop-filter: blur(15px); z-index: 10; transition: 0.3s; box-shadow: 0 20px 40px rgba(0,0,0,0.1); color: var(--text); }
+  [data-theme="dark"] .link-overlay { background: rgba(30, 30, 30, 0.9); }
   .link-overlay.hidden { opacity: 0; pointer-events: none; }
-  .link-overlay h3 { margin-bottom: 5px; font-size: 18px; text-align: center; }
-  .link-overlay input { width:100%; padding: 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: white; outline: none; font-size: 15px; }
-  .link-overlay .btn-row { display: flex; gap: 8px; }
+  .link-overlay h3 { margin-bottom: 5px; font-size: 24px; text-align: center; font-weight: 700; }
+  .link-overlay input { width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; font-size: 16px; transition: 0.2s; }
+  .link-overlay input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
+  .link-overlay .btn-row { display: flex; gap: 12px; }
   
-  /* Кнопки управления поверх видео */
-  .video-actions { position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 8px; }
-  .action-btn { background: rgba(0,0,0,0.6); color: white; border: 1px solid var(--line); padding: 8px 12px; border-radius: 6px; cursor: pointer; backdrop-filter: blur(4px); font-size: 13px; transition: 0.2s; }
-  .action-btn:hover { background: rgba(0,0,0,0.8); }
+  /* Кнопки поверх видео */
+  .video-actions { position: absolute; top: 16px; right: 16px; z-index: 10; display: flex; gap: 10px; pointer-events: none; }
+  .video-actions .action-btn { pointer-events: auto; }
+  .action-btn { background: rgba(255, 255, 255, 0.8); color: var(--text); border: 1px solid var(--border); padding: 10px 16px; border-radius: 8px; cursor: pointer; backdrop-filter: blur(8px); font-size: 14px; font-weight: 600; transition: 0.2s; }
+  [data-theme="dark"] .action-btn { background: rgba(30, 30, 30, 0.8); }
+  .action-btn:hover { background: var(--surface-hover); border-color: var(--text-muted); }
 
-  /* Панель управления видео */
-  .controls { display:flex; align-items:center; gap:12px; padding:12px 16px; border-top:1px solid var(--line); background:var(--panel); }
-  .btn { padding:8px 14px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--text); cursor:pointer; font-size:14px; white-space:nowrap; transition:0.2s;}
-  .btn:hover { background:var(--line); }
-  .btn:disabled { opacity: 0.5; cursor: default; }
-  .progress { flex:1; height:24px; cursor:pointer; display:flex; align-items:center; }
-  .track { width:100%; height:5px; background:var(--line); border-radius:3px; position:relative; }
-  .fill { position:absolute; left:0; top:0; bottom:0; background:var(--accent); border-radius:3px; width:0; }
-  .time { font-size:12px; color:var(--text2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  /* Панель управления */
+  .controls { display: flex; align-items: center; justify-content: flex-end; gap: 16px; padding: 12px 24px; border-top: 1px solid var(--border); background: var(--surface); }
+  .btn { padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-hover); color: var(--text); cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap; transition: 0.2s; }
+  .btn:hover { background: var(--border); }
 
-  /* Нижняя панель (Табы) */
-  .bottom-panel { border-top:1px solid var(--line); background:var(--panel); display: flex; flex-direction: column; height: 160px; }
-  .tabs { display: flex; border-bottom: 1px solid var(--line); }
-  .tab { padding: 10px 20px; font-size: 13px; cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent; transition: 0.2s; }
-  .tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: bold; }
-  .tab-content { flex: 1; overflow-y: auto; padding: 10px 16px; }
+  /* Нижняя панель */
+  .bottom-panel { border-top: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; height: 180px; }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); }
+  .tab { padding: 14px 24px; font-size: 14px; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; transition: 0.2s; font-weight: 500; }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab-content { flex: 1; overflow-y: auto; padding: 16px 24px; }
   
-  /* Список зрителей */
-  .viewers-list { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-  .viewer { display:flex; align-items:center; gap:8px; font-size:13px; padding:4px 12px 4px 4px; border:1px solid var(--line); border-radius:999px; background:var(--panel2); }
-  .avatar { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:700; text-transform: uppercase; background-size: cover; background-position: center; }
+  /* Зрители */
+  .viewers-list { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .viewer { display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 6px 16px 6px 6px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-hover); font-weight: 500; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; text-transform: uppercase; background-size: cover; background-position: center; }
 
-  /* Список очереди */
-  .queue-list { display: flex; flex-direction: column; gap: 8px; }
-  .queue-item { display: flex; align-items: center; justify-content: space-between; background: var(--panel2); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); }
-  .queue-info { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
-  .queue-title { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
-  .queue-author { font-size: 11px; color: var(--text2); }
-  .del-btn { background: transparent; border: none; color: #e5534b; cursor: pointer; font-size: 16px; padding: 0 5px; }
-  .del-btn:hover { color: #ff7b73; }
-  .queue-empty { font-size: 13px; color: var(--text3); text-align: center; padding-top: 10px; }
+  /* Очередь */
+  .queue-list { display: flex; flex-direction: column; gap: 10px; }
+  .queue-item { display: flex; align-items: center; justify-content: space-between; background: var(--surface-hover); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border); }
+  .queue-info { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+  .queue-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
+  .queue-author { font-size: 12px; color: var(--text-muted); }
+  .del-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 0 5px; transition: 0.2s; }
+  .del-btn:hover { color: #ef4444; }
+  .queue-empty { font-size: 14px; color: var(--text-muted); text-align: center; padding-top: 20px; }
 
   /* Чат */
-  .chat { flex:1; display:flex; flex-direction:column; background:var(--panel); min-width:280px; }
-  .msgs { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; }
-  .msg { font-size:14px; line-height:1.4; }
-  .msg .author { font-weight:bold; font-size:12px; color:var(--text2); display:flex; align-items:center; gap:5px; margin-bottom:2px; }
-  .msg .avatar-mini { width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; background-size: cover; background-position: center; }
-  .inputrow { padding:12px; border-top:1px solid var(--line); display:flex; gap:8px; }
-  .inp { flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--text); outline:none; }
+  .chat { flex: 1; display: flex; flex-direction: column; background: var(--surface); min-width: 320px; }
+  .msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .msg { font-size: 14px; line-height: 1.5; }
+  .msg .author { font-weight: 600; font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .msg .avatar-mini { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 600; background-size: cover; background-position: center; }
+  .inputrow { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 12px; }
+  .inp { flex: 1; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; font-size: 14px; transition: 0.2s; }
+  .inp:focus { border-color: var(--accent); }
 
   #avatarInput { display: none; }
 
-  /* АДАПТАЦИЯ */
+  /* Скроллбар */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
   @media (max-width: 768px) {
     .body { flex-direction: column; }
-    .video-pane { flex: none; height: 45vh; border-right: none; border-bottom: 1px solid var(--line); }
+    .video-pane { flex: none; height: 45vh; border-right: none; border-bottom: 1px solid var(--border); }
     .chat { flex: 1; min-width: 100%; }
     .logo-area strong { display: none; }
-    .controls { padding: 8px; gap: 8px; }
-    .btn { padding: 10px 16px; font-size: 15px; }
-    .time { font-size: 13px; }
-    .bottom-panel { height: 140px; }
+    .controls { padding: 8px 16px; }
+    .bottom-panel { height: 160px; }
     .queue-title { max-width: 200px; }
-    .link-overlay { flex-direction: column; }
+    .link-overlay { padding: 20px; }
+    .tab { padding: 12px 16px; }
   }
 </style>
 </head>
 <body>
   
-  <!-- Шапка -->
   <div class="topbar">
     <div class="logo-area">
       <button class="home-btn" onclick="window.location.href='/'">← На главную</button>
       <span class="roomcode" id="roomDisplay" title="Нажмите, чтобы скопировать ссылку">
-        <span>🔗</span> <span id="roomText">...</span>
+        <span id="roomText">...</span>
       </span>
     </div>
     
     <div class="profile-area">
       <div class="my-avatar-btn" id="myAvatarBtn" title="Мой профиль">Я</div>
-      
       <div class="profile-menu" id="profileMenu">
         <div>
           <label>Моё имя</label>
           <input id="nameInp" placeholder="Имя" autocomplete="off">
         </div>
-        <button class="btn" id="uploadPhotoBtn">Загрузить фото профиля</button>
+        <button class="btn" id="uploadPhotoBtn">Загрузить фото</button>
       </div>
     </div>
   </div>
@@ -135,23 +150,18 @@
         <h3>Что будем смотреть?</h3>
         <input id="urlInp" placeholder="Вставьте ссылку на YouTube..." autocomplete="off">
         <div class="btn-row">
-          <button class="btn" style="flex:1;" onclick="loadVideo(true)">Включить сейчас</button>
-          <button class="btn" style="flex:1; background:var(--line);" onclick="loadVideo(false)">Добавить в очередь</button>
+          <button class="btn" style="flex:1; background:var(--accent); color:var(--accent-text); border-color:var(--accent);" onclick="loadVideo(true)">Включить сейчас</button>
+          <button class="btn" style="flex:1;" onclick="loadVideo(false)">Добавить в очередь</button>
         </div>
       </div>
       
       <div class="video-actions" id="videoActions" style="display:none;">
-        <button class="action-btn" onclick="showLinkOverlay()">+ Добавить видео</button>
-        <button class="action-btn" onclick="playNext()">⏭ Следующее</button>
+        <button class="action-btn" onclick="showLinkOverlay()">+ Добавить</button>
+        <button class="action-btn" onclick="playNext()">Следующее</button>
       </div>
 
       <div class="controls">
-        <button class="btn" id="playBtn" disabled>Смотреть</button>
-        <button class="btn" id="fsBtn" title="На весь экран" style="display:none;">⛶</button>
-        <div class="progress" id="progress">
-          <div class="track"><div class="fill" id="fill"></div></div>
-        </div>
-        <span class="time" id="timeLbl">0:00 / 0:00</span>
+        <button class="btn" id="fsBtn" title="На весь экран" style="display:none;">На весь экран</button>
       </div>
       
       <div class="bottom-panel">
@@ -173,8 +183,8 @@
     <div class="chat">
       <div class="msgs" id="msgs"></div>
       <div class="inputrow">
-        <input class="inp" id="inp" placeholder="Сообщение..." autocomplete="off">
-        <button class="btn" onclick="sendMsg()">→</button>
+        <input class="inp" id="inp" placeholder="Написать сообщение..." autocomplete="off">
+        <button class="btn" style="background:var(--accent); color:var(--accent-text); border-color:var(--accent);" onclick="sendMsg()">→</button>
       </div>
     </div>
   </div>
@@ -184,22 +194,23 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
+    // 1. Применяем сохраненную тему
+    const savedTheme = localStorage.getItem('pipinka_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // 2. Переменные
     let player, socket;
     let isRemoteAction = false;
     let actionLock = false;     
-    let tickTimer = null;
     let currentViewers = [];
     let myAvatar = localStorage.getItem('kinoroom_avatar') || '';
     let queue = []; 
     
     let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
 
-    // 1. Получаем комнату (если нет - на главную)
     const urlParams = new URLSearchParams(window.location.search);
     let room = urlParams.get('room');
-    if (!room) {
-      window.location.href = '/';
-    }
+    if (!room) { window.location.href = '/'; }
     document.getElementById('roomText').textContent = room;
 
     document.getElementById('roomDisplay').onclick = () => {
@@ -208,7 +219,6 @@
       });
     };
 
-    // 2. Профиль
     let myName = currentUser ? currentUser.name : (localStorage.getItem('kinoroom_name') || 'Гость-' + Math.floor(Math.random() * 100));
     document.getElementById('nameInp').value = myName;
 
@@ -263,14 +273,13 @@
     }
     updateMyButton();
 
-    const colors = ['#4c8dff', '#e5534b', '#57ab5a', '#ff9800', '#9c27b0', '#00bcd4', '#e91e63'];
+    const colors = ['#74c0fc', '#faa2c1', '#63e6be', '#ffd43b', '#b197fc', '#ffc078'];
     function getColor(name) {
       let hash = 0;
       for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
       return colors[Math.abs(hash) % colors.length];
     }
 
-    // --- Socket ---
     socket = io();
     socket.emit('join', { room: room, name: myName, avatar: myAvatar });
 
@@ -312,7 +321,8 @@
       setTimeout(() => {
         const currentTime = player.getCurrentTime();
         const diff = Math.abs(currentTime - data.time);
-        if (diff > 1.5) player.seekTo(data.time, true);
+        if (diff > 2) player.seekTo(data.time, true);
+        
         if (data.playing && player.getPlayerState() !== YT.PlayerState.PLAYING) player.playVideo();
         else if (!data.playing && player.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo();
       }, 300);
@@ -320,7 +330,7 @@
       setTimeout(() => {
         isRemoteAction = false;
         actionLock = false;
-      }, 1000);
+      }, 1200);
     });
 
     socket.on('chat-message', (msg) => {
@@ -393,7 +403,7 @@
         id = u.searchParams.get('v') || (u.hostname.includes('youtu.be') ? u.pathname.slice(1) : null);
       } catch(e) {}
       
-      if (!id) return alert('Ссылка неверная. Нужна ссылка вида youtube.com/watch?v=...');
+      if (!id) return alert('Ссылка неверная.');
       
       fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`)
         .then(res => res.json())
@@ -409,7 +419,6 @@
           } else {
             socket.emit('add-to-queue', { room: room, videoId: id, title: title, author: name, authorId: socket.id });
             document.getElementById('urlInp').value = '';
-            alert('Видео добавлено в очередь!');
             switchTab('queue');
           }
         })
@@ -433,22 +442,18 @@
       if (player) { player.loadVideoById(videoId); return; }
       player = new YT.Player('player', {
         videoId: videoId,
-        playerVars: { rel: 0, origin: window.location.origin },
+        playerVars: { rel: 0, origin: window.location.origin, controls: 1 },
         events: {
           onReady: () => {
-            document.getElementById('playBtn').disabled = false;
             document.getElementById('fsBtn').style.display = 'block';
-            document.getElementById('player').style.pointerEvents = 'none'; 
-            startTick();
           },
           onStateChange: (e) => {
             if (isRemoteAction || actionLock) return;
+            
             const time = player.getCurrentTime();
             if (e.data === YT.PlayerState.PAUSED) {
-              document.getElementById('playBtn').textContent = 'Смотреть';
               socket.emit('video-action', { room: room, playing: false, time: time });
             } else if (e.data === YT.PlayerState.PLAYING) {
-              document.getElementById('playBtn').textContent = 'Пауза';
               socket.emit('video-action', { room: room, playing: true, time: time });
             } else if (e.data === YT.PlayerState.ENDED) {
               socket.emit('video-ended', { room: room });
@@ -457,45 +462,6 @@
         }
       });
     }
-
-    document.getElementById('playBtn').onclick = () => {
-      if (!player) return;
-      const st = player.getPlayerState();
-      const time = player.getCurrentTime();
-      if (st === YT.PlayerState.PLAYING) {
-        player.pauseVideo();
-        socket.emit('video-action', { room: room, playing: false, time: time });
-      } else {
-        player.playVideo();
-        socket.emit('video-action', { room: room, playing: true, time: time });
-      }
-    };
-
-    document.getElementById('progress').onclick = function(e) {
-      if (!player) return;
-      const dur = player.getDuration();
-      if (!dur) return;
-      const r = this.getBoundingClientRect();
-      const ratio = (e.clientX - r.left) / r.width;
-      const newTime = dur * ratio;
-      player.seekTo(newTime, true);
-      socket.emit('video-action', { room: room, playing: player.getPlayerState() === YT.PlayerState.PLAYING, time: newTime });
-    };
-
-    function startTick() {
-      if(tickTimer) clearInterval(tickTimer);
-      tickTimer = setInterval(() => {
-        if (!player || typeof player.getCurrentTime !== 'function') return;
-        const cur = player.getCurrentTime() || 0;
-        const dur = player.getDuration() || 0;
-        if (dur > 0) {
-          document.getElementById('fill').style.width = (cur / dur * 100) + '%';
-          document.getElementById('timeLbl').textContent = fmt(cur) + ' / ' + fmt(dur);
-        }
-      }, 250);
-    }
-
-    function fmt(s) { s = Math.max(0, Math.floor(s)); const m = Math.floor(s/60), ss = s%60; return m + ':' + (ss<10?'0':'') + ss; }
 
     document.getElementById('fsBtn').onclick = () => {
       const videoPane = document.getElementById('videoPane');
