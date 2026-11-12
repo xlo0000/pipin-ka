@@ -35,8 +35,8 @@
   .theme-btn[data-color="pink"] { background: #fcc2d7; }
 
   .profile-area { display: flex; align-items: center; gap: 15px; }
-  .login-btn { padding: 10px 24px; border-radius: 8px; background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); font-weight: 600; cursor: pointer; font-size: 14px; transition: 0.2s; }
-  .login-btn:hover { background: var(--border); }
+  .login-btn { padding: 10px 24px; border-radius: 8px; background: var(--accent); color: var(--accent-text); border: none; font-weight: 700; cursor: pointer; font-size: 14px; transition: 0.2s; }
+  .login-btn:hover { opacity: 0.9; }
   
   .user-info { display: flex; align-items: center; gap: 12px; cursor: pointer; position: relative; padding: 6px 12px; border-radius: 10px; transition: 0.2s; border: 1px solid transparent; }
   .user-info:hover { background: var(--surface-hover); border-color: var(--border); }
@@ -170,7 +170,9 @@
       <button class="theme-btn" data-color="mint" onclick="setTheme('mint')"></button>
       <button class="theme-btn" data-color="pink" onclick="setTheme('pink')"></button>
     </div>
-    <div class="profile-area" id="profileArea"></div>
+    <div class="profile-area" id="profileArea">
+      <!-- Сюда JS будет вставлять либо кнопку, либо профиль -->
+    </div>
   </div>
 
   <!-- Контент -->
@@ -211,9 +213,10 @@
   </div>
 
 <script>
+  // Инициализация Socket.io для личных сообщений
   const socket = io();
 
-  // ТЕМЫ
+  // 1. ТЕМЫ
   function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('pipinka_theme', theme);
@@ -224,16 +227,21 @@
   const savedTheme = localStorage.getItem('pipinka_theme') || 'light';
   setTheme(savedTheme);
 
+  // 2. ДАННЫЕ ПОЛЬЗОВАТЕЛЯ
   let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
   let authMode = 'login';
   let currentFriendId = null;
 
+  // 3. ФУНКЦИЯ ОБНОВЛЕНИЯ ИНТЕРФЕЙСА
   function updateUI() {
     const area = document.getElementById('profileArea');
     const myRoomsSection = document.getElementById('myRoomsSection');
     const sidebar = document.getElementById('sidebar');
 
+    console.log("Обновление UI. Пользователь:", currentUser);
+
     if (currentUser) {
+      // Если вошел - показываем профиль и панели
       area.innerHTML = `
         <div class="user-info" id="userInfoBtn">
           <span class="user-name">${currentUser.name}</span>
@@ -258,12 +266,14 @@
       document.addEventListener('click', () => menu.classList.remove('on'));
       menu.addEventListener('click', (e) => e.stopPropagation());
     } else {
+      // Если НЕ вошел - показываем кнопку "Войти"
       area.innerHTML = `<button class="login-btn" onclick="openModal('login')">Войти</button>`;
       myRoomsSection.style.display = 'none';
       sidebar.style.display = 'none';
     }
   }
 
+  // 4. ЗАГРУЗКА КОМНАТ
   async function loadMyRooms() {
     if (!currentUser) return;
     try {
@@ -318,7 +328,7 @@
     window.location.href = `/room.html?room=${newRoomId}`;
   }
 
-  // ДРУЗЬЯ
+  // 5. ДРУЗЬЯ И ЛИЧНЫЙ ЧАТ
   async function searchUsers() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) return;
@@ -425,7 +435,6 @@
     } catch (e) { alert('Ошибка'); }
   }
 
-  // ЛИЧНЫЙ ЧАТ
   async function openFriendChat(friendId, friendName) {
     currentFriendId = friendId;
     document.getElementById('chatWithName').textContent = friendName;
@@ -477,7 +486,7 @@
     if (scroll) container.scrollTop = container.scrollHeight;
   }
 
-  // АВТОРИЗАЦИЯ
+  // 6. АВТОРИЗАЦИЯ
   function openModal(mode) {
     authMode = mode;
     document.getElementById('authModal').classList.add('on');
@@ -528,8 +537,17 @@
     }
   }
 
+  // Запуск при загрузке страницы
   updateUI();
-  window.addEventListener('focus', () => { loadMyRooms(); loadFriends(); loadFriendRequests(); });
+  
+  // Обновление данных при возврате на вкладку
+  window.addEventListener('focus', () => { 
+    if (currentUser) {
+      loadMyRooms(); 
+      loadFriends(); 
+      loadFriendRequests(); 
+    }
+  });
 </script>
 </body>
 </html>
