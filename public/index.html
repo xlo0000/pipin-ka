@@ -198,7 +198,7 @@
     }
   }
 
-    async function loadMyRooms() {
+      async function loadMyRooms() {
     if (!currentUser) return;
     try {
       const res = await fetch(`/api/my-rooms/${currentUser.id}`);
@@ -212,6 +212,7 @@
       }
 
       rooms.forEach(roomObj => {
+        // Проверка на старый формат (если вдруг пришла просто строка)
         const id = (typeof roomObj === 'string') ? roomObj : roomObj.roomId;
         const note = (typeof roomObj === 'string') ? '' : (roomObj.note || '');
 
@@ -219,13 +220,12 @@
         div.className = 'room-card';
         div.onclick = () => window.location.href = `/room.html?room=${id}`;
         
-        // Выносим onclick прямо в HTML, чтобы клик точно срабатывал
         let noteHtml = note 
-          ? `<div class="room-note-text" onclick="event.stopPropagation(); editRoomNote('${id}', '${note.replace(/'/g, "\\'")}')" title="Нажмите, чтобы изменить">${note}</div>`
-          : `<div class="room-note-text empty" onclick="event.stopPropagation(); editRoomNote('${id}', '')" title="Нажмите, чтобы добавить заметку">+ Добавить заметку</div>`;
+          ? `<div class="room-note-text" title="Нажмите, чтобы изменить">${note}</div>`
+          : `<div class="room-note-text empty" title="Нажмите, чтобы добавить заметку">+ Добавить заметку</div>`;
 
         div.innerHTML = `
-          <button class="delete-room-btn" onclick="event.stopPropagation(); deleteRoom(event, '${id}')" title="Удалить комнату">×</button>
+          <button class="delete-room-btn" title="Удалить комнату">×</button>
           ${noteHtml}
           <div class="room-id">${id}</div>
           <div class="room-meta">
@@ -233,6 +233,24 @@
             <span class="arrow">→</span>
           </div>
         `;
+
+        // Безопасно навешиваем клики через JavaScript, а не через HTML
+        const noteDiv = div.querySelector('.room-note-text');
+        noteDiv.addEventListener('click', (e) => {
+          e.stopPropagation(); // Не даем клику уйти на карточку
+          editRoomNote(id, note);
+        });
+
+        const delBtn = div.querySelector('.delete-room-btn');
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteRoom(e, id);
+        });
+
+        grid.appendChild(div);
+      });
+    } catch (e) { console.error("Ошибка загрузки комнат:", e); }
+  }
 
         grid.appendChild(div);
       });
