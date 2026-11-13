@@ -155,6 +155,12 @@ io.on('connection', (socket) => {
   socket.on('join', async (data) => {
     const roomId = data.room;
     socket.join(roomId);
+        // НОВОЕ: Если пользователь авторизован (передал userId), сохраняем комнату в его список
+    if (data.userId) {
+      try {
+        await pool.query('INSERT INTO user_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [data.userId, roomId]);
+      } catch (err) { console.error('Ошибка сохранения комнаты в профиль:', err); }
+    }
     
     if (!roomsCache[roomId]) {
       try {
