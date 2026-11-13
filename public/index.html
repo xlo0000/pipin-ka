@@ -198,7 +198,7 @@
     }
   }
 
-   async function loadMyRooms() {
+    async function loadMyRooms() {
     if (!currentUser) return;
     try {
       const res = await fetch(`/api/my-rooms/${currentUser.id}`);
@@ -206,15 +206,12 @@
       const grid = document.getElementById('roomsGrid');
       grid.innerHTML = '';
 
-      console.log("Данные от сервера:", rooms); // Выведем в консоль, чтобы проверить
-
       if (!rooms || rooms.length === 0) {
         grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">У вас пока нет комнат. Создайте первую!</div>';
         return;
       }
 
       rooms.forEach(roomObj => {
-        // Если вдруг сервер прислал старый формат (просто строку), мы это обработаем
         const id = (typeof roomObj === 'string') ? roomObj : roomObj.roomId;
         const note = (typeof roomObj === 'string') ? '' : (roomObj.note || '');
 
@@ -222,12 +219,13 @@
         div.className = 'room-card';
         div.onclick = () => window.location.href = `/room.html?room=${id}`;
         
+        // Выносим onclick прямо в HTML, чтобы клик точно срабатывал
         let noteHtml = note 
-          ? `<div class="room-note-text" title="Нажмите, чтобы изменить">${note}</div>`
-          : `<div class="room-note-text empty" title="Нажмите, чтобы добавить заметку">+ Добавить заметку</div>`;
+          ? `<div class="room-note-text" onclick="event.stopPropagation(); editRoomNote('${id}', '${note.replace(/'/g, "\\'")}')" title="Нажмите, чтобы изменить">${note}</div>`
+          : `<div class="room-note-text empty" onclick="event.stopPropagation(); editRoomNote('${id}', '')" title="Нажмите, чтобы добавить заметку">+ Добавить заметку</div>`;
 
         div.innerHTML = `
-          <button class="delete-room-btn" onclick="deleteRoom(event, '${id}')" title="Удалить комнату">×</button>
+          <button class="delete-room-btn" onclick="event.stopPropagation(); deleteRoom(event, '${id}')" title="Удалить комнату">×</button>
           ${noteHtml}
           <div class="room-id">${id}</div>
           <div class="room-meta">
@@ -235,6 +233,11 @@
             <span class="arrow">→</span>
           </div>
         `;
+
+        grid.appendChild(div);
+      });
+    } catch (e) { console.error("Ошибка загрузки комнат:", e); }
+  }
 
         const noteDiv = div.querySelector('.room-note-text');
         noteDiv.onclick = (e) => {
