@@ -73,6 +73,16 @@
   .room-card .room-meta span.arrow { color: var(--accent); font-size: 18px; transition: 0.3s; }
   .room-card:hover .room-meta span.arrow { transform: translateX(5px); }
 
+  /* Заметка */
+  .room-note-text {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    margin-bottom: 5px; padding-bottom: 10px;
+    border-bottom: 1px dashed var(--border);
+    cursor: pointer; transition: 0.2s; position: relative; z-index: 2;
+  }
+  .room-note-text:hover { color: var(--accent-hover); }
+  .room-note-text.empty { color: var(--text-muted); font-style: italic; font-weight: 400; font-size: 13px; }
+
   /* Кнопка удаления комнаты */
   .delete-room-btn { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); opacity: 0; transition: 0.2s; font-size: 16px; z-index: 2; }
   .room-card:hover .delete-room-btn { opacity: 1; }
@@ -101,13 +111,12 @@
     .user-name { display: none; }
     .container { padding: 40px 20px; }
     .theme-picker { order: 3; width: 100%; justify-content: center; }
-    .delete-room-btn { opacity: 1; } /* На телефонах кнопка удаления видна сразу */
+    .delete-room-btn { opacity: 1; }
   }
 </style>
 </head>
 <body>
 
-  <!-- Модальное окно -->
   <div class="modal-overlay" id="authModal">
     <div class="modal">
       <h2 id="modalTitle">Вход</h2>
@@ -120,29 +129,23 @@
     </div>
   </div>
 
-  <!-- Шапка -->
   <div class="topbar">
     <div class="logo" onclick="window.location.reload()">pipin<span>'ka</span></div>
-    
     <div class="theme-picker">
-      <button class="theme-btn" data-color="light" onclick="setTheme('light')" title="Светлая"></button>
-      <button class="theme-btn" data-color="dark" onclick="setTheme('dark')" title="Темная"></button>
-      <button class="theme-btn" data-color="blue" onclick="setTheme('blue')" title="Голубая"></button>
-      <button class="theme-btn" data-color="mint" onclick="setTheme('mint')" title="Мятная"></button>
-      <button class="theme-btn" data-color="pink" onclick="setTheme('pink')" title="Розовая"></button>
+      <button class="theme-btn" data-color="light" onclick="setTheme('light')"></button>
+      <button class="theme-btn" data-color="dark" onclick="setTheme('dark')"></button>
+      <button class="theme-btn" data-color="blue" onclick="setTheme('blue')"></button>
+      <button class="theme-btn" data-color="mint" onclick="setTheme('mint')"></button>
+      <button class="theme-btn" data-color="pink" onclick="setTheme('pink')"></button>
     </div>
-
     <div class="profile-area" id="profileArea"></div>
   </div>
 
-  <!-- Контент -->
   <div class="container">
     <div class="hero">
       <h1>Смотрите кино вместе</h1>
       <p>Создайте комнату, поделитесь ссылкой с друзьями и наслаждайтесь синхронизированным просмотром</p>
-      <button class="create-btn" onclick="createRoom()">
-        Создать комнату
-      </button>
+      <button class="create-btn" onclick="createRoom()">Создать комнату</button>
     </div>
 
     <div id="myRoomsSection" style="display:none;">
@@ -152,7 +155,6 @@
   </div>
 
 <script>
-  // 1. Логика тем
   function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('pipinka_theme', theme);
@@ -164,7 +166,6 @@
   const savedTheme = localStorage.getItem('pipinka_theme') || 'light';
   setTheme(savedTheme);
 
-  // 2. Логика аккаунтов
   let currentUser = JSON.parse(localStorage.getItem('kinoroom_user')) || null;
   let authMode = 'login';
 
@@ -198,7 +199,7 @@
     }
   }
 
-      async function loadMyRooms() {
+  async function loadMyRooms() {
     if (!currentUser) return;
     try {
       const res = await fetch(`/api/my-rooms/${currentUser.id}`);
@@ -212,7 +213,6 @@
       }
 
       rooms.forEach(roomObj => {
-        // Проверка на старый формат (если вдруг пришла просто строка)
         const id = (typeof roomObj === 'string') ? roomObj : roomObj.roomId;
         const note = (typeof roomObj === 'string') ? '' : (roomObj.note || '');
 
@@ -234,10 +234,9 @@
           </div>
         `;
 
-        // Безопасно навешиваем клики через JavaScript, а не через HTML
         const noteDiv = div.querySelector('.room-note-text');
         noteDiv.addEventListener('click', (e) => {
-          e.stopPropagation(); // Не даем клику уйти на карточку
+          e.stopPropagation();
           editRoomNote(id, note);
         });
 
@@ -252,28 +251,24 @@
     } catch (e) { console.error("Ошибка загрузки комнат:", e); }
   }
 
-        grid.appendChild(div);
+  async function editRoomNote(roomId, currentNote) {
+    const newNote = prompt('Введите заметку для этой комнаты:', currentNote);
+    if (newNote === null) return;
+    if (newNote.trim() === currentNote) return;
+
+    try {
+      await fetch('/api/update-room-note', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, roomId: roomId, note: newNote.trim() })
       });
-    } catch (e) { console.error("Ошибка загрузки комнат:", e); }
+      loadMyRooms();
+    } catch (e) { alert('Ошибка сохранения заметки'); }
   }
 
-        const noteDiv = div.querySelector('.room-note-text');
-        noteDiv.onclick = (e) => {
-          e.stopPropagation();
-          editRoomNote(id, note);
-        };
-
-        grid.appendChild(div);
-      });
-    } catch (e) { console.error("Ошибка загрузки комнат:", e); }
-  }
-
-  // Функция удаления комнаты
   async function deleteRoom(event, roomId) {
-    event.stopPropagation(); // Останавливаем переход в комнату при клике на крестик
-
+    event.stopPropagation();
     if (!confirm(`Вы уверены, что хотите удалить комнату ${roomId} из своего списка?`)) return;
-
     try {
       const res = await fetch('/api/delete-room', {
         method: 'POST',
@@ -281,15 +276,9 @@
         body: JSON.stringify({ userId: currentUser.id, roomId: roomId })
       });
       const data = await res.json();
-      
-      if (data.success) {
-        loadMyRooms(); // Перезагружаем список комнат
-      } else {
-        alert('Ошибка при удалении');
-      }
-    } catch (e) {
-      alert('Ошибка сети');
-    }
+      if (data.success) loadMyRooms();
+      else alert('Ошибка при удалении');
+    } catch (e) { alert('Ошибка сети'); }
   }
 
   async function createRoom() {
