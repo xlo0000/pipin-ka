@@ -198,7 +198,7 @@
     }
   }
 
-  async function loadMyRooms() {
+   async function loadMyRooms() {
     if (!currentUser) return;
     try {
       const res = await fetch(`/api/my-rooms/${currentUser.id}`);
@@ -206,27 +206,45 @@
       const grid = document.getElementById('roomsGrid');
       grid.innerHTML = '';
 
-      if (rooms.length === 0) {
+      console.log("Данные от сервера:", rooms); // Выведем в консоль, чтобы проверить
+
+      if (!rooms || rooms.length === 0) {
         grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">У вас пока нет комнат. Создайте первую!</div>';
         return;
       }
 
-      rooms.forEach(roomId => {
+      rooms.forEach(roomObj => {
+        // Если вдруг сервер прислал старый формат (просто строку), мы это обработаем
+        const id = (typeof roomObj === 'string') ? roomObj : roomObj.roomId;
+        const note = (typeof roomObj === 'string') ? '' : (roomObj.note || '');
+
         const div = document.createElement('div');
         div.className = 'room-card';
-        div.onclick = () => window.location.href = `/room.html?room=${roomId}`;
-                div.innerHTML = `
-          <button class="delete-room-btn" onclick="deleteRoom(event, '${roomObj.roomId}')" title="Удалить комнату">×</button>
+        div.onclick = () => window.location.href = `/room.html?room=${id}`;
+        
+        let noteHtml = note 
+          ? `<div class="room-note-text" title="Нажмите, чтобы изменить">${note}</div>`
+          : `<div class="room-note-text empty" title="Нажмите, чтобы добавить заметку">+ Добавить заметку</div>`;
+
+        div.innerHTML = `
+          <button class="delete-room-btn" onclick="deleteRoom(event, '${id}')" title="Удалить комнату">×</button>
           ${noteHtml}
-          <div class="room-id">${roomObj.roomId}</div>
+          <div class="room-id">${id}</div>
           <div class="room-meta">
             <span>Войти в комнату</span>
             <span class="arrow">→</span>
           </div>
         `;
+
+        const noteDiv = div.querySelector('.room-note-text');
+        noteDiv.onclick = (e) => {
+          e.stopPropagation();
+          editRoomNote(id, note);
+        };
+
         grid.appendChild(div);
       });
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Ошибка загрузки комнат:", e); }
   }
 
   // Функция удаления комнаты
