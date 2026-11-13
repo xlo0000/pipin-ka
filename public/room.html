@@ -281,7 +281,12 @@
     }
 
     socket = io();
-    socket.emit('join', { room: room, name: myName, avatar: myAvatar });
+        socket.emit('join', { 
+      room: room, 
+      name: myName, 
+      avatar: myAvatar, 
+      userId: currentUser ? currentUser.id : null 
+    });
 
     socket.on('room-state', (state) => {
       if (state.videoId) {
