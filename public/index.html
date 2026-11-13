@@ -215,9 +215,10 @@
         const div = document.createElement('div');
         div.className = 'room-card';
         div.onclick = () => window.location.href = `/room.html?room=${roomId}`;
-        div.innerHTML = `
-          <button class="delete-room-btn" onclick="deleteRoom(event, '${roomId}')" title="Удалить комнату">×</button>
-          <div class="room-id">${roomId}</div>
+                div.innerHTML = `
+          <button class="delete-room-btn" onclick="deleteRoom(event, '${roomObj.roomId}')" title="Удалить комнату">×</button>
+          ${noteHtml}
+          <div class="room-id">${roomObj.roomId}</div>
           <div class="room-meta">
             <span>Войти в комнату</span>
             <span class="arrow">→</span>
