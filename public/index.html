@@ -278,19 +278,44 @@
     } catch (e) { alert('Ошибка сохранения заметки'); }
   }
 
-  async function deleteRoom(event, roomId) {
+  // Переменная для хранения ID комнаты, которую собираемся удалить
+  let roomToDelete = null;
+
+  // 1. Открытие окна удаления (вызывается при клике на крестик)
+  function deleteRoom(event, roomId) {
     event.stopPropagation();
-    if (!confirm(`Вы уверены, что хотите удалить комнату ${roomId} из своего списка?`)) return;
+    roomToDelete = roomId;
+    document.getElementById('deleteRoomName').textContent = roomId;
+    document.getElementById('deleteModal').classList.add('on');
+  }
+
+  // 2. Закрытие окна (если передумали)
+  function closeDeleteModal() {
+    roomToDelete = null;
+    document.getElementById('deleteModal').classList.remove('on');
+  }
+
+  // 3. Подтверждение удаления (запрос к серверу)
+  async function confirmDeleteRoom() {
+    if (!roomToDelete) return;
+    
     try {
       const res = await fetch('/api/delete-room', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id, roomId: roomId })
+        body: JSON.stringify({ userId: currentUser.id, roomId: roomToDelete })
       });
       const data = await res.json();
-      if (data.success) loadMyRooms();
-      else alert('Ошибка при удалении');
-    } catch (e) { alert('Ошибка сети'); }
+      
+      if (data.success) {
+        closeDeleteModal();
+        loadMyRooms(); // Обновляем список на экране
+      } else {
+        alert('Ошибка при удалении на сервере');
+      }
+    } catch (e) {
+      alert('Ошибка сети. Проверьте подключение.');
+    }
   }
 
   async function createRoom() {
