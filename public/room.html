@@ -47,9 +47,31 @@
   #player { width: 100%; flex: 1; pointer-events: auto; }
   
   /* Оверлей ссылки */
-  .link-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 255, 255, 0.9); padding: 30px; border-radius: 20px; display: flex; flex-direction: column; gap: 20px; width: 90%; max-width: 550px; border: 1px solid var(--border); backdrop-filter: blur(15px); z-index: 10; transition: 0.3s; box-shadow: 0 20px 40px rgba(0,0,0,0.1); color: var(--text); }
-  [data-theme="dark"] .link-overlay { background: rgba(30, 30, 30, 0.9); }
-  .link-overlay.hidden { opacity: 0; pointer-events: none; }
+    /* Оверлей ссылки (теперь скрыт по умолчанию) */
+  .link-overlay { 
+    display: none; /* Скрываем по умолчанию */
+    position: absolute; 
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%); 
+    background: rgba(255, 255, 255, 0.95); 
+    padding: 30px; 
+    border-radius: 20px; 
+    flex-direction: column; 
+    gap: 20px; 
+    width: 90%; max-width: 550px; 
+    border: 1px solid var(--border); 
+    backdrop-filter: blur(15px); 
+    z-index: 10; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
+    color: var(--text); 
+  }
+  [data-theme="dark"] .link-overlay { background: rgba(30, 30, 30, 0.95); }
+  
+  /* Класс для показа окна */
+  .link-overlay.on { display: flex; } 
+  
+  /* Прячем старый класс, который мы использовали раньше */
+  .link-overlay.hidden { display: none; }
   .link-overlay h3 { margin-bottom: 5px; font-size: 24px; text-align: center; font-weight: 700; }
   .link-overlay input { width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; font-size: 16px; transition: 0.2s; }
   .link-overlay input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
