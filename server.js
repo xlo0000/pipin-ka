@@ -43,15 +43,20 @@ async function initDB() {
       );
     `);
 
-    await pool.query(`
+        await pool.query(`
       CREATE TABLE IF NOT EXISTS user_rooms (
         user_id INTEGER REFERENCES users(id),
         room_id VARCHAR(255),
+        note VARCHAR(255) DEFAULT '',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (user_id, room_id)
       );
     `);
 
+    // Если таблица уже существовала, добавляем колонку note (на случай обновления)
+    await pool.query(`
+      ALTER TABLE user_rooms ADD COLUMN IF NOT EXISTS note VARCHAR(255) DEFAULT '';
+    `);
     console.log('База данных готова!');
   } catch (err) {
     console.error('Ошибка при инициализации БД:', err);
@@ -114,26 +119,23 @@ app.post('/api/login', async (req, res) => {
 });
 
 // 3. Получить комнаты пользователя
+// Получить комнаты пользователя (с заметками)
 app.get('/api/my-rooms/:userId', async (req, res) => {
   try {
-    const result = await pool.query('SELECT room_id FROM user_rooms WHERE user_id = $1 ORDER BY created_at DESC', [req.params.userId]);
-    res.json(result.rows.map(r => r.room_id));
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка сервера' });
-  }
+    const result = await pool.query('SELECT room_id, note FROM user_rooms WHERE user_id = $1 ORDER BY created_at DESC', [req.params.userId]);
+    res.json(result.rows.map(r => ({ roomId: r.room_id, note: r.note })));
+  } catch (err) { res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 // 4. Привязать комнату к пользователю
-app.post('/api/link-room', async (req, res) => {
-  const { userId, roomId } = req.body;
+// Обновить заметку к комнате
+app.post('/api/update-room-note', async (req, res) => {
+  const { userId, roomId, note } = req.body;
   try {
-    await pool.query('INSERT INTO user_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, roomId]);
+    await pool.query('UPDATE user_rooms SET note = $1 WHERE user_id = $2 AND room_id = $3', [note, userId, roomId]);
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка сервера' });
-  }
+  } catch (err) { res.status(500).json({ error: 'Ошибка сервера' }); }
 });
-
 // 5. Удалить комнату из списка пользователя
 app.post('/api/delete-room', async (req, res) => {
   const { userId, roomId } = req.body;
