@@ -310,12 +310,12 @@
       userId: currentUser ? currentUser.id : null 
     });
 
-    socket.on('room-state', (state) => {
+       socket.on('room-state', (state) => {
       if (state.videoId) {
         loadYT(state.videoId);
         hideLinkOverlay();
       } else {
-        showLinkOverlay();
+        document.getElementById('videoActions').style.display = 'flex';
       }
       
       state.chat.forEach(msg => addMsg(msg.name, msg.text, msg.avatar));
@@ -419,9 +419,8 @@
       }
     }
 
-    function showLinkOverlay() { document.getElementById('linkOverlay').classList.remove('hidden'); }
-    function hideLinkOverlay() { document.getElementById('linkOverlay').classList.add('hidden'); document.getElementById('videoActions').style.display = 'flex'; }
-
+       function showLinkOverlay() { document.getElementById('linkOverlay').classList.add('on'); }
+    function hideLinkOverlay() { document.getElementById('linkOverlay').classList.remove('on'); document.getElementById('videoActions').style.display = 'flex'; }
     function loadVideo(playNow) {
       const url = document.getElementById('urlInp').value;
       let id = null;
