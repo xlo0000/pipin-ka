@@ -102,6 +102,8 @@
   .modal .btn:hover { background: var(--accent-hover); }
   .modal .switch { text-align: center; font-size: 14px; color: var(--text-muted); cursor: pointer; font-weight: 500; transition: 0.2s; }
   .modal .switch:hover { color: var(--text); }
+    .modal .switch { text-align: center; font-size: 14px; color: var(--text-muted); cursor: pointer; font-weight: 500; transition: 0.2s; margin-top: 15px; }
+  .modal .switch:hover { color: var(--text); }
 
   @media (max-width: 600px) {
     .topbar { padding: 15px 20px; flex-wrap: wrap; gap: 15px; }
@@ -128,7 +130,17 @@
       <div style="text-align:center; margin-top:20px;"><span class="switch" onclick="closeModal()" style="font-size:13px;">Закрыть</span></div>
     </div>
   </div>
-
+  <!-- Модальное окно удаления комнаты -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+      <h2 style="font-size: 20px; margin-bottom: 15px;">Удалить комнату?</h2>
+      <p style="text-align: center; color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">
+        Вы уверены, что хотите удалить комнату <b id="deleteRoomName" style="color:var(--text);"></b> из своего списка?
+      </p>
+      <button class="btn" style="background: #ef4444; color: white;" onclick="confirmDeleteRoom()">Да, удалить</button>
+      <div class="switch" onclick="closeDeleteModal()">Отмена</div>
+    </div>
+  </div>
   <div class="topbar">
     <div class="logo" onclick="window.location.reload()">pipin<span>'ka</span></div>
     <div class="theme-picker">
