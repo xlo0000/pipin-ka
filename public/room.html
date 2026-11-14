@@ -133,7 +133,7 @@
 
   @media (max-width: 768px) {
     .body { flex-direction: column; }
-    .video-pane { flex: none; height: 45vh; border-right: none; border-bottom: 1px solid var(--border); }
+    .video-pane { flex: none; height: 60vh; border-right: none; border-bottom: 1px solid var(--border); }
     .chat { flex: 1; min-width: 100%; }
     .logo-area strong { display: none; }
     .controls { padding: 8px 16px; }
@@ -175,6 +175,12 @@
       justify-content: flex-end;
       margin-top: 5px;
     }
+  }
+          /* Стили для полноэкранного режима */
+  #player:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    background: #000;
   }
 </style>
 </head>
@@ -530,8 +536,10 @@
       });
     }
 
-    document.getElementById('fsBtn').onclick = () => {
-      const videoPane = document.getElementById('videoPane');
+       document.getElementById('fsBtn').onclick = () => {
+      // Берем только сам контейнер с видео (без панелей управления)
+      const videoPane = document.getElementById('player'); 
+      
       if (!document.fullscreenElement) {
         if (videoPane.requestFullscreen) videoPane.requestFullscreen();
         else if (videoPane.webkitRequestFullscreen) videoPane.webkitRequestFullscreen();
