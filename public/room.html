@@ -7,40 +7,6 @@
     <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#74c0fc">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  .btn-small {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--surface-hover);
-    color: var(--text);
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    transition: 0.2s;
-  }
-  .btn-small:hover {
-    background: var(--border);
-  }
-  .btn-small.primary {
-    background: var(--accent);
-    color: var(--accent-text);
-    border-color: var(--accent);
-  }
-
-  /* Адаптация для телефонов */
-  @media (max-width: 768px) {
-    .tabs {
-      flex-wrap: wrap;
-      gap: 5px;
-      padding: 8px;
-    }
-    #videoActions {
-      padding-right: 0 !important;
-      width: 100%;
-      justify-content: flex-end;
-      margin-top: 5px;
-    }
-  }
     <style>
   /* Базовые переменные */
   :root {
@@ -175,6 +141,40 @@
     .queue-title { max-width: 200px; }
     .link-overlay { padding: 20px; }
     .tab { padding: 12px 16px; }
+  }
+          .btn-small {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-hover);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: 0.2s;
+  }
+  .btn-small:hover {
+    background: var(--border);
+  }
+  .btn-small.primary {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+
+  /* Адаптация для телефонов */
+  @media (max-width: 768px) {
+    .tabs {
+      flex-wrap: wrap;
+      gap: 5px;
+      padding: 8px;
+    }
+    #videoActions {
+      padding-right: 0 !important;
+      width: 100%;
+      justify-content: flex-end;
+      margin-top: 5px;
+    }
   }
 </style>
 </head>
