@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>pipin'ka — Комната</title>
+    <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#74c0fc">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* Базовые переменные */
@@ -521,6 +523,17 @@
     document.getElementById('inp').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') sendMsg();
     });
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+          console.log('SW registered: ', registration);
+        }).catch(registrationError => {
+          console.log('SW registration failed: ', registrationError);
+        });
+      });
+    }
   </script>
 </body>
 </html>
