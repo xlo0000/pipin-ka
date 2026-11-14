@@ -7,7 +7,41 @@
     <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#74c0fc">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
+  .btn-small {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-hover);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: 0.2s;
+  }
+  .btn-small:hover {
+    background: var(--border);
+  }
+  .btn-small.primary {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+
+  /* Адаптация для телефонов */
+  @media (max-width: 768px) {
+    .tabs {
+      flex-wrap: wrap;
+      gap: 5px;
+      padding: 8px;
+    }
+    #videoActions {
+      padding-right: 0 !important;
+      width: 100%;
+      justify-content: flex-end;
+      margin-top: 5px;
+    }
+  }
+    <style>
   /* Базовые переменные */
   :root {
     --bg: #f8f9fa; --surface: #ffffff; --surface-hover: #f1f3f5; --border: #e9ecef;
@@ -180,19 +214,23 @@
         </div>
       </div>
       
-      <div class="video-actions" id="videoActions" style="display:none;">
-        <button class="action-btn" onclick="showLinkOverlay()">+ Добавить</button>
-        <button class="action-btn" onclick="playNext()">Следующее</button>
-      </div>
+      
 
       <div class="controls">
         <button class="btn" id="fsBtn" title="На весь экран" style="display:none;">На весь экран</button>
       </div>
       
       <div class="bottom-panel">
-        <div class="tabs">
-          <div class="tab active" onclick="switchTab('viewers')">Зрители (<span id="viewerCount">0</span>)</div>
-          <div class="tab" onclick="switchTab('queue')">Очередь (<span id="queueCount">0</span>)</div>
+               <div class="tabs" style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex;">
+            <div class="tab active" onclick="switchTab('viewers')">Зрители (<span id="viewerCount">0</span>)</div>
+            <div class="tab" onclick="switchTab('queue')">Очередь (<span id="queueCount">0</span>)</div>
+          </div>
+          <!-- Сюда переехали кнопки -->
+          <div id="videoActions" style="display:none; padding-right: 16px; gap: 8px;">
+            <button class="btn-small primary" onclick="showLinkOverlay()">+ Добавить</button>
+            <button class="btn-small" onclick="playNext()">Следующее</button>
+          </div>
         </div>
         
         <div class="tab-content" id="tab-viewers">
