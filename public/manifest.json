@@ -1,0 +1,15 @@
+{
+  "name": "pipin'ka — Смотрим вместе",
+  "short_name": "pipin'ka",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#74c0fc",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2503/2503508.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
